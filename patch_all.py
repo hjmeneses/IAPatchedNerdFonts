@@ -1,126 +1,191 @@
 """
-Parchea TODAS las fuentes .ttf en este directorio con 9 glyphs de Devicons.
-- Inserta en TODAS las subtablas cmap (format 4 y format 12)
-- Cambia nombre interno agregando " Patched"
-- Guarda con sufijo -Patched en el nombre de archivo
+Parchea las fuentes CaskaydiaCove Nerd Font (v3.5.1) con iconos de IA de devicons
+que Nerd Fonts todavía no incluye.
+
+- Escala por em de devicons (como font-patcher), no por glifo, para conservar
+  las proporciones relativas entre iconos
+- NF:    caja de UPM x UPM, avance = 1 celda (el icono desborda, igual que nf-cod-*)
+- Mono:  caja de 1 celda, centrada; avance = 1 celda (sigue siendo monoespaciada)
+- Propo: caja de UPM x UPM; avance = ancho del icono
+- Centra verticalmente en (sTypoAscender + sTypoDescender) / 2
+- Inserta en todas las subtablas cmap Unicode (formato 4 y 12)
+- Agrega " Patched" a la familia y "Patched" al nombre PostScript
+
+Uso:
+    python patch_all.py <carpeta_ttf> --devicons <devicons.ttf> [-o Patched]
 """
-import os, glob
+import argparse
+import glob
+import os
+import sys
+
+from fontTools.pens.boundsPen import ControlBoundsPen
+from fontTools.pens.transformPen import TransformPen
+from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
-from fontTools.ttLib.tables import _g_l_y_f as _glyf_mod
-from fontTools.ttLib.tables._g_l_y_f import Glyph as TtGlyph
 
-_glyf_mod.table__g_l_y_f.__len__ = lambda self: len(self.glyphs)
-
-INPUT_DIR   = os.path.dirname(os.path.abspath(__file__))
-DEVICONS_IN = r"C:\path\to\devicons.ttf"
-OUTPUT_DIR  = os.path.join(INPUT_DIR, "Patched")
-
+# Codepoint -> nombre del glifo en devicons (npm devicons 2.4.0, dist/devicons.ttf).
+# U+E00B..E09F está libre en Nerd Fonts 3.5.1 (hueco tras Pomicons, que no crece).
+# Claude, OpenAI y MCP ya existen en Nerd Fonts: nf-cod-claude U+EC82,
+# nf-cod-openai U+EC81, nf-cod-mcp U+EC47.
 GLYPH_MAP = {
-    "anthropic-icon": 0xE00B,
-    "anthropic":      0xE00C,
-    "claude-code":    0xE00D,
-    "claude-icon":    0xE00E,
-    "claude":         0xE00F,
-    "mcp-icon":       0xE010,
-    "mcp":            0xE011,
-    "openai-icon":    0xE012,
-    "openai":         0xE013,
+    0xE00B: "claude-code",          # robot de Claude Code
+    0xE00C: "anthropic-icon",
+    0xE00D: "google-gemini-icon",
+    0xE00E: "ollama-icon",
+    0xE00F: "cursor-icon",
+    0xE010: "microsoft-copilot",
 }
 
-# Sufijo para nombres internos
-PATCH_SUFFIX = " Patched"
-PS_PATCH_SUFFIX = "-Patched"
+GLYPH_PREFIX = "ai-"
+FAMILY_SUFFIX = " Patched"
+PS_SUFFIX = "Patched"
+VERSION_NOTE = "; AI icons (devicons 2.4.0)"
+# Tablas que dependen de numGlyphs y quedarían inválidas al agregar glifos
+DROP_TABLES = ("hdmx", "LTSH", "VDMX")
 
-def patch_name_table(font):
-    """Agrega ' Patched' al family name y nombres relacionados."""
-    for record in font["name"].names:
+
+def variant(font):
+    """'mono', 'propo' o 'nf' según los nombres y post.isFixedPitch."""
+    family = " ".join(r.toUnicode() for r in font["name"].names if r.nameID in (1, 16))
+    if "Propo" in family or "NFP" in family:
+        return "propo"
+    if font["post"].isFixedPitch:
+        return "mono"
+    return "nf"
+
+
+def build_glyph(dev, src_name, font, kind):
+    """Devuelve (glyph, avance) del glifo de devicons escalado y posicionado para `font`."""
+    gs = dev.getGlyphSet()
+    dev_upm = dev["head"].unitsPerEm
+    upm = font["head"].unitsPerEm
+    os2 = font["OS/2"]
+    cell = font["hmtx"][font.getBestCmap()[ord("M")]][0]
+
+    # Bounds por puntos de control: es lo que usa TrueType para el bbox del glifo
+    bounds = ControlBoundsPen(gs)
+    gs[src_name].draw(bounds)
+    x0, y0, x1, y1 = bounds.bounds
+
+    # Escala por em; si el dibujo se sale del em (p. ej. microsoft-copilot: -1..1009),
+    # se reduce lo justo para que quepa en la caja
+    box = cell if kind == "mono" else upm
+    scale = box / max(dev_upm, x1 - x0, y1 - y0)
+
+    # Vertical: centro del em de devicons -> centro de la celda destino
+    dev_center = (dev["hhea"].ascent + dev["hhea"].descent) / 2
+    dy = (os2.sTypoAscender + os2.sTypoDescender) / 2 - dev_center * scale
+    # Horizontal: centrado en la celda (Mono) o alineado al inicio (NF/Propo)
+    if kind == "mono":
+        dx = (cell - (x0 + x1) * scale) / 2
+    else:
+        dx = -x0 * scale
+
+    pen = TTGlyphPen(None)
+    gs[src_name].draw(TransformPen(pen, (scale, 0, 0, scale, dx, dy)))
+    glyph = pen.glyph()
+
+    advance = round((x1 - x0) * scale) if kind == "propo" else cell
+    return glyph, advance
+
+
+def rename(font):
+    """Inserta el sufijo tras la familia: 'CaskaydiaCove NFM SemiLight' -> 'CaskaydiaCove NFM Patched SemiLight'."""
+    names = font["name"]
+    bases = {r.toUnicode() for r in names.names if r.nameID == 16}
+    if not bases:
+        bases = {names.getDebugName(1)}
+    bases = sorted(bases, key=len, reverse=True)
+
+    for record in names.names:
         s = record.toUnicode()
-        if record.nameID == 1:  # Family
-            if not s.endswith(PATCH_SUFFIX.strip()):
-                record.string = s + PATCH_SUFFIX
-        elif record.nameID == 4:  # Full Name
-            if not s.endswith(PATCH_SUFFIX.strip()):
-                record.string = s + PATCH_SUFFIX
-        elif record.nameID == 6:  # PostScript Name
-            if not s.endswith(PS_PATCH_SUFFIX):
-                record.string = s + PS_PATCH_SUFFIX
-        elif record.nameID == 16:  # Typographic Family
-            if not s.endswith(PATCH_SUFFIX.strip()):
-                record.string = s + PATCH_SUFFIX
+        if record.nameID in (1, 3, 4, 16):
+            for base in bases:
+                if s.startswith(base) and not s.startswith(base + FAMILY_SUFFIX):
+                    record.string = base + FAMILY_SUFFIX + s[len(base):]
+                    break
+        elif record.nameID == 5:
+            if not s.endswith(VERSION_NOTE):
+                record.string = s + VERSION_NOTE
+        elif record.nameID == 6:
+            family, sep, style = s.partition("-")
+            if not family.endswith(PS_SUFFIX):
+                record.string = family + PS_SUFFIX + sep + style
 
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-fonts = sorted(glob.glob(os.path.join(INPUT_DIR, "*.ttf")))
-print(f"Fuentes: {len(fonts)}  |  Salida: {OUTPUT_DIR}\n")
 
-for font_path in fonts:
-    fname = os.path.basename(font_path)
-    print(f"  {fname} ... ", end="", flush=True)
+def patch_font(path, dev, out_dir):
+    font = TTFont(path)
+    cmap = font.getBestCmap()
+    taken = [f"U+{cp:04X}" for cp in GLYPH_MAP if cp in cmap]
+    if taken:
+        raise ValueError(f"codepoints ya ocupados ({', '.join(taken)}); ¿fuente ya parcheada o Nerd Fonts los usa?")
 
-    dev = TTFont(DEVICONS_IN)
-    dev_glyf = dev["glyf"]
-    dev_hmtx = dev["hmtx"].metrics
-    dev_upm  = dev["head"].unitsPerEm
+    kind = variant(font)
+    glyf = font["glyf"]
+    hmtx = font["hmtx"]
+    unicode_tables = [t for t in font["cmap"].tables if t.isUnicode() and t.format in (4, 12)]
 
-    cas = TTFont(font_path)
-    cas_glyf = cas["glyf"]
-    cas_glyf.ensureDecompiled()
-    cas_hmtx = cas["hmtx"].metrics
-    cas_upm  = cas["head"].unitsPerEm
-    scale    = cas_upm / dev_upm
+    for cp, src_name in GLYPH_MAP.items():
+        name = GLYPH_PREFIX + src_name
+        glyph, advance = build_glyph(dev, src_name, font, kind)
+        glyph.recalcBounds(glyf)
+        # glyf.__setitem__ agrega el nombre al glyphOrder de la fuente (es la misma lista)
+        glyf[name] = glyph
+        hmtx[name] = (advance, glyph.xMin)
+        for table in unicode_tables:
+            table.cmap[cp] = name
 
-    for glyph_name, target_cp in GLYPH_MAP.items():
-        if glyph_name not in dev_glyf:
-            continue
-        new_name  = f"devicon.{glyph_name}"
-        src_glyph = dev_glyf[glyph_name]
+    order = font.getGlyphOrder()
+    if len(order) != len(set(order)):
+        raise RuntimeError("glyphOrder con nombres duplicados")
 
-        if src_glyph is not None:
-            src_glyph.expand(dev_glyf)
-            if scale != 1.0:
-                if hasattr(src_glyph, 'coordinates') and src_glyph.coordinates is not None:
-                    src_glyph.coordinates.transform(((scale, 0), (0, scale)))
-                for attr in ('xMin', 'yMin', 'xMax', 'yMax'):
-                    if hasattr(src_glyph, attr):
-                        setattr(src_glyph, attr, int(getattr(src_glyph, attr) * scale))
+    for tag in DROP_TABLES:
+        if tag in font:
+            del font[tag]
 
-            # Centrar verticalmente entre ascender y descender de la fuente destino
-            os2 = cas["OS/2"]
-            font_center = (os2.sTypoAscender + os2.sTypoDescender) // 2
-            glyph_center = (src_glyph.yMax + src_glyph.yMin) // 2
-            dy = font_center - glyph_center
-            if hasattr(src_glyph, 'coordinates') and src_glyph.coordinates is not None:
-                src_glyph.coordinates.translate((0, dy))
-            src_glyph.yMin += dy
-            src_glyph.yMax += dy
+    rename(font)
 
-        cas_glyf.glyphs[new_name] = src_glyph if src_glyph is not None else TtGlyph()
+    stem, ext = os.path.splitext(os.path.basename(path))
+    out_path = os.path.join(out_dir, f"{stem}-Patched{ext}")
+    font.save(out_path)
+    font.close()
+    return kind, out_path
 
-        if glyph_name in dev_hmtx:
-            aw, lsb = dev_hmtx[glyph_name]
-            cas_hmtx[new_name] = (int(aw * scale), int(lsb * scale))
-        else:
-            cas_hmtx[new_name] = (cas_upm, 0)
 
-        # Insertar en subtablas cmap format 4 y 12 (no format 6 que es Mac legacy)
-        for st in cas["cmap"].tables:
-            if st.format in (4, 12, 14):
-                st.cmap[target_cp] = new_name
+def main():
+    ap = argparse.ArgumentParser(description="Agrega iconos de IA de devicons a CaskaydiaCove Nerd Font.")
+    ap.add_argument("src", help="carpeta con los .ttf originales de CaskaydiaCove Nerd Font 3.5.1")
+    ap.add_argument("--devicons", required=True, help="ruta a devicons.ttf (npm devicons 2.4.0, dist/devicons.ttf)")
+    ap.add_argument("-o", "--out", default="Patched", help="carpeta de salida (default: Patched)")
+    args = ap.parse_args()
 
-        cas.getGlyphOrder().append(new_name)
+    dev = TTFont(args.devicons)
+    missing = [n for n in GLYPH_MAP.values() if n not in dev.getGlyphSet()]
+    if missing:
+        sys.exit(f"devicons.ttf no tiene: {', '.join(missing)}")
 
-    # Sincronizar glyphOrder
-    font_go    = cas.getGlyphOrder()
-    actual_set = set(cas_glyf.glyphs.keys())
-    cas_glyf.glyphOrder = [n for n in font_go if n in actual_set]
+    fonts = sorted(f for f in glob.glob(os.path.join(args.src, "*.ttf")) if "-Patched" not in f)
+    if not fonts:
+        sys.exit(f"No hay .ttf sin parchear en {args.src}")
 
-    # Cambiar nombre interno
-    patch_name_table(cas)
+    os.makedirs(args.out, exist_ok=True)
+    print(f"Fuentes: {len(fonts)}  |  Salida: {os.path.abspath(args.out)}\n")
 
-    # Guardar con sufijo -Patched en nombre de archivo
-    out_name = fname.replace(".ttf", "-Patched.ttf")
-    cas.save(os.path.join(OUTPUT_DIR, out_name))
-    print("OK")
+    failed = 0
+    for path in fonts:
+        print(f"  {os.path.basename(path)} ... ", end="", flush=True)
+        try:
+            kind, _ = patch_font(path, dev, args.out)
+            print(f"OK ({kind})")
+        except Exception as e:  # sigue con las demás y reporta al final
+            failed += 1
+            print(f"ERROR: {e}")
+
     dev.close()
-    cas.close()
+    print(f"\nListo. {len(fonts) - failed}/{len(fonts)} fuentes parcheadas en {os.path.abspath(args.out)}")
+    sys.exit(1 if failed else 0)
 
-print(f"\nListo. {len(fonts)} fuentes parcheadas en {OUTPUT_DIR}")
+
+if __name__ == "__main__":
+    main()

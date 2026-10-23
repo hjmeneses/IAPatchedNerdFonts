@@ -1,0 +1,7 @@
+# Fuentes: se publican en GitHub Releases, no en el repo
+*.ttf
+*.otf
+*.zip
+Patched/
+__pycache__/
+.venv/

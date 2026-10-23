@@ -1,128 +1,84 @@
 # CaskaydiaCove Nerd Font — Patched with AI Icons
 
-This is an archived font from the Nerd Fonts release v3.4.0, extended with custom AI tool icons via `patch_all.py`.
+[CaskaydiaCove Nerd Font](https://github.com/ryanoasis/nerd-fonts) **v3.5.1** extended with AI tool icons that Nerd Fonts does not ship yet, taken from [devicons](https://github.com/vorillaz/devicons) **v2.4.0**.
 
-For more information on Nerd Fonts see:
-* https://github.com/ryanoasis/nerd-fonts/
-* https://github.com/ryanoasis/nerd-fonts/releases/latest/
+![Glyphs rendered in the NF, Mono and Propo variants, next to the official Nerd Fonts AI icons](preview.png)
 
----
+## Included glyphs
 
-## About Cascadia Code
+| Codepoint | Icon | devicons glyph |
+|-----------|------|----------------|
+| `U+E00B` | Claude Code (robot) | `claude-code` |
+| `U+E00C` | Anthropic | `anthropic-icon` |
+| `U+E00D` | Google Gemini | `google-gemini-icon` |
+| `U+E00E` | Ollama | `ollama-icon` |
+| `U+E00F` | Cursor (editor) | `cursor-icon` |
+| `U+E010` | Microsoft Copilot | `microsoft-copilot` |
 
-**Cascadia Code** is a fun, new monospaced font that includes programming ligatures.
+### Already in Nerd Fonts — use the official codepoints
 
-For more information have a look at the upstream website: https://github.com/microsoft/cascadia-code
+Since v3.5.1, Nerd Fonts includes these through Codicons, so this patch does not duplicate them:
 
-Note that upstream has a version with Nerd Font icons: CascadiaCodeNF. That has not been created with the Nerd Fonts `font-patcher`.
+| Codepoint | Nerd Fonts name |
+|-----------|-----------------|
+| `U+EC82` | `nf-cod-claude` |
+| `U+EC81` | `nf-cod-openai` |
+| `U+EC47` | `nf-cod-mcp` |
+| `U+EC1E` | `nf-cod-copilot` (GitHub Copilot) |
 
-### Preprocessed Source Font
+### Why `U+E00B`?
 
-This source font has been preprocessed - it is not taken directly from upstream.
-Cascadia Code is mainly a variable font (VF) and the static versions (that Nerd Fonts
-are based on) are prepared in a different way: They have been hinted with `ttfautohint`.
-That hints differ considerably from the hints in the VF. That changes the rendering for
-smaller sizes (usual sizes in terminals) considerably.
+Nerd Fonts appends new icons to the end of each icon set's block (Devicons `U+E700…`, Codicons `U+EA60…`), and those blocks grow with every release. `U+E00B–E09F` is the unused gap after Pomicons (`U+E000–E00A`), which has not changed in years, so it is the least likely place to collide with a future Nerd Fonts release. If Nerd Fonts adds any of these icons officially, they will be removed from this patch in favor of the official codepoint.
 
-To get the 'original' (i.e. VF) feel of the font we redo the hints in the static versions:
-Open the font with Microsoft's VisualTrueType (VTT) and apply Light Latin Autohint.
-The issue is known upstream and will probably be fixed. But until it is fixed we need
-to do this manual process on all source updates.
+## Installing
 
-Version: 2407.24
+Download the zip from [Releases](../../releases), extract it, select the `.ttf` files, and choose **Install** (or **Install for all users**).
 
-### Why `CaskaydiaCove` and not `Cascadia Code`?
+The fonts install as a separate family (`CaskaydiaCove NF Patched`, `CaskaydiaCove NFM Patched`, `CaskaydiaCove NFP Patched`), so they can live side by side with the upstream Nerd Font.
 
-The reason for the name change is to comply with the SIL Open Font License (OFL), in particular the [Reserved Font Name mechanism][SIL-RFN]:
+| Variant | Use it when |
+|---------|-------------|
+| **NFM** (Mono) | Your terminal requires strict monospacing. Icons fit in one cell. |
+| **NF** | Most terminals. Icons are larger and overflow to about 1.7 cells, like the official Nerd Fonts icons. |
+| **NFP** (Propo) | Proportional contexts: GUI elements and presentations. |
 
-> No Modified Version of the Font Software may use the Reserved Font
-> Name(s) unless explicit written permission is granted by the corresponding
-> Copyright Holder. This restriction only applies to the primary font name as
-> presented to the users.
+To check the glyphs in your terminal:
 
-See the [Reserved Font Name section][SIL-RFN] for additional information.
-
----
-
-## Which font variant should I use?
-
-### TL;DR
-
-* **`Nerd Font Mono`** — if your terminal is limited to monospaced fonts.
-* **`Nerd Font`** — if you want larger icons (~1.5 character widths). Most terminals support this.
-* **`Nerd Font Propo`** — for proportional contexts (GUI elements, presentations, etc).
-
-### Ligatures
-
-Ligatures are generally preserved in the patched fonts.
-Nerd Fonts `v2.0.0` had no ligatures in the `Nerd Font Mono` fonts; this was dropped with `v2.1.0`.
-If you have a ligature-aware terminal and don't want ligatures, you can usually disable them in the terminal settings.
-
-### Getting the font
-
-#### Option 1: Download already patched font
-
-* Download a stable version from the [release page](https://github.com/ryanoasis/nerd-fonts/releases)
-* Or download the development version from the folders here
-
-#### Option 2: Patch your own font
-
-* Patch your own variations with the options provided by the font patcher (e.g. exclude certain symbol sets to reduce file size)
-
-For more information see: [The FAQ](https://github.com/ryanoasis/nerd-fonts/wiki/FAQ-and-Troubleshooting#which-font)
-
----
-
-## AI Icons Patch (`patch_all.py`)
-
-### What it does
-
-`patch_all.py` takes the 36 TTF fonts in this directory and inserts 9 custom glyphs for **Anthropic**, **Claude**, **Claude Code**, **MCP**, and **OpenAI**. Each glyph is scaled to match the target font's UPM and centered vertically within the cell. The patched fonts are saved to `Patched/` with a `-Patched` suffix in both the filename and internal font metadata.
-
-### Why
-
-Nerd Fonts does not include icons for modern AI tools. This script adds them in the Unicode Private Use Area (`U+E00B`–`U+E013`), following the same convention used by the Nerd Fonts project, so they work anywhere a Nerd Font is supported — terminals, editors, status bars — with no plugins or images required.
-
-### Preview
-
-![Glyphs in terminal](preview.png)
-
-### Included glyphs
-
-| Name | Codepoint |
-|------|-----------|
-| anthropic-icon | U+E00B |
-| anthropic | U+E00C |
-| claude-code | U+E00D |
-| claude-icon | U+E00E |
-| claude | U+E00F |
-| mcp-icon | U+E010 |
-| mcp | U+E011 |
-| openai-icon | U+E012 |
-| openai | U+E013 |
-
-### Requirements
-
+```powershell
+0xE00B..0xE010 | ForEach-Object { "$([char]$_)  U+{0:X4}" -f $_ }
 ```
+
+In an Oh My Posh theme, use the escape sequence, e.g. `""` for the Claude Code robot.
+
+## Building the fonts yourself
+
+```powershell
 pip install fonttools
+
+# 1. CaskaydiaCove Nerd Font v3.5.1
+#    https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/CascadiaCode.tar.xz
+# 2. devicons v2.4.0 (dist/devicons.ttf inside the npm package)
+#    https://registry.npmjs.org/devicons/-/devicons-2.4.0.tgz
+
+python patch_all.py <folder-with-ttf> --devicons <path\to\devicons.ttf> -o Patched
+python verify.py <folder-with-ttf> Patched
 ```
 
-Edit the `devicons.ttf` path in `patch_all.py` if needed:
+`patch_all.py`:
 
-```python
-DEVICONS_IN = r"C:\path\to\devicons.ttf"
-```
+- Scales each icon by the devicons em (like Nerd Fonts' `font-patcher`), so icons keep their relative sizes. Glyphs that overflow the em are shrunk to fit.
+- **Mono**: fits the icon in one cell, centered, with a one-cell advance, so the font stays monospaced.
+- **NF**: UPM-sized icon, one-cell advance, overflowing to the right like `nf-cod-*`.
+- **Propo**: UPM-sized icon, with an advance equal to the icon width.
+- Centers icons vertically on `(sTypoAscender + sTypoDescender) / 2`.
+- Adds the glyphs to every Unicode `cmap` subtable (formats 4 and 12).
+- Renames the family to `… Patched` and the PostScript name to `…Patched-Style`, and appends a note to the version string.
+- Refuses to patch a font that already uses these codepoints, for example a font that was already patched.
 
-### Usage
+`verify.py` compares each output font with its source and checks codepoints, advances, the cell box, vertical centering, a duplicate-free glyph order, unchanged original metrics, and names. The release fonts also pass [OpenType Sanitizer](https://github.com/khaledhosny/ots-python) (`python -m ots`).
 
-```powershell
-python patch_all.py
-```
+## Licenses
 
-Install the fonts from `Patched/` (right-click → **Install**), then verify the glyphs in Windows Terminal:
-
-```powershell
-0xE00B..0xE013 | ForEach-Object { "$([char]$_)  U+{0:X4}" -f $_ }
-```
-
-[SIL-RFN]:http://scripts.sil.org/cms/scripts/page.php?item_id=OFL_web_fonts_and_RFNs#14cbfd4a
+- **Fonts**: SIL Open Font License 1.1 — see [`OFL.txt`](OFL.txt). This applies to Cascadia Code (© Microsoft, Reserved Font Name *Cascadia Code*), to the Nerd Fonts patches, and to these modified versions, which must remain under the OFL.
+- **Icons**: from [devicons](https://github.com/vorillaz/devicons) (MIT). The logos are trademarks of their respective owners and are included only to identify those tools.
+- **Scripts** (`patch_all.py`, `verify.py`): GNU GPL v3 — see [`LICENSE`](LICENSE).
