@@ -3,5 +3,6 @@
 *.otf
 *.zip
 Patched/
+Symbols/
 __pycache__/
 .venv/

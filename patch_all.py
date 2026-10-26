@@ -35,6 +35,38 @@ GLYPH_MAP = {
     0xE00E: "ollama-icon",
     0xE00F: "cursor-icon",
     0xE010: "microsoft-copilot",
+    0xE011: "google-antigravity-icon",
+    0xE012: "kiro-icon",
+    # Modelos y proveedores
+    0xE013: "aws-bedrock-icon",
+    0xE014: "deepseek",
+    0xE015: "mistral-ai-icon",
+    0xE016: "meta-icon",            # Llama
+    0xE017: "qwen-icon",
+    0xE018: "google-gemma-icon",
+    0xE019: "hugging-face-icon",
+    0xE01A: "grok-icon",
+    # Plataformas y ejecución local
+    0xE01B: "openrouter-icon",
+    0xE01C: "google-vertex-ai-icon",
+    0xE01D: "google-ai-studio-icon",
+    0xE01E: "microsoft-azure-ai",   # Azure AI Foundry
+    0xE01F: "lm-studio-icon",
+    0xE020: "groq",
+    # Agentes y editores de código
+    0xE021: "codex-icon",
+    0xE022: "windsurf-icon",
+    0xE023: "cline",
+    0xE024: "zed",
+    0xE025: "warp",
+    0xE026: "devin-icon",
+    0xE027: "lovable-icon",
+    0xE028: "google-notebooklm-icon",
+    # Frameworks
+    0xE029: "langchain",
+    0xE02A: "llamaindex-icon",
+    0xE02B: "crewai-icon",
+    0xE02C: "dify-icon",
 }
 
 GLYPH_PREFIX = "ai-"
@@ -56,13 +88,10 @@ def variant(font):
     return "nf"
 
 
-def build_glyph(dev, src_name, font, kind):
-    """Devuelve (glyph, avance) del glifo de devicons escalado y posicionado para `font`."""
+def icon_transform(dev, src_name, upm, center_y, cell, kind):
+    """Devuelve (matriz afín, avance) que lleva el glifo de devicons a la fuente destino."""
     gs = dev.getGlyphSet()
     dev_upm = dev["head"].unitsPerEm
-    upm = font["head"].unitsPerEm
-    os2 = font["OS/2"]
-    cell = font["hmtx"][font.getBestCmap()[ord("M")]][0]
 
     # Bounds por puntos de control: es lo que usa TrueType para el bbox del glifo
     bounds = ControlBoundsPen(gs)
@@ -74,21 +103,33 @@ def build_glyph(dev, src_name, font, kind):
     box = cell if kind == "mono" else upm
     scale = box / max(dev_upm, x1 - x0, y1 - y0)
 
-    # Vertical: centro del em de devicons -> centro de la celda destino
+    # Vertical: centro del em de devicons -> centro de la celda destino. Si el dibujo
+    # es más alto que el em (p. ej. kiro-icon: -8..1011) se centra el dibujo, si no
+    # se saldría de la caja por el lado más largo
     dev_center = (dev["hhea"].ascent + dev["hhea"].descent) / 2
-    dy = (os2.sTypoAscender + os2.sTypoDescender) / 2 - dev_center * scale
+    if y1 - y0 > dev_upm:
+        dev_center = (y0 + y1) / 2
+    dy = center_y - dev_center * scale
     # Horizontal: centrado en la celda (Mono) o alineado al inicio (NF/Propo)
     if kind == "mono":
         dx = (cell - (x0 + x1) * scale) / 2
     else:
         dx = -x0 * scale
 
-    pen = TTGlyphPen(None)
-    gs[src_name].draw(TransformPen(pen, (scale, 0, 0, scale, dx, dy)))
-    glyph = pen.glyph()
-
     advance = round((x1 - x0) * scale) if kind == "propo" else cell
-    return glyph, advance
+    return (scale, 0, 0, scale, dx, dy), advance
+
+
+def build_glyph(dev, src_name, font, kind):
+    """Devuelve (glyph, avance) del glifo de devicons escalado y posicionado para `font`."""
+    os2 = font["OS/2"]
+    cell = font["hmtx"][font.getBestCmap()[ord("M")]][0]
+    center_y = (os2.sTypoAscender + os2.sTypoDescender) / 2
+    matrix, advance = icon_transform(dev, src_name, font["head"].unitsPerEm, center_y, cell, kind)
+
+    pen = TTGlyphPen(None)
+    dev.getGlyphSet()[src_name].draw(TransformPen(pen, matrix))
+    return pen.glyph(), advance
 
 
 def rename(font):
