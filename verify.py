@@ -5,7 +5,7 @@ Verifica las fuentes generadas por patch_all.py comparándolas con las originale
 - Mono: todos los glifos mapeados conservan el ancho de celda (sigue monoespaciada)
 - NF: avance = 1 celda; Propo: avance = ancho del icono
 - Iconos centrados verticalmente y dentro de la caja de referencia de Nerd Fonts
-- glyphOrder sin duplicados; glifos originales intactos; nombres con " Patched"
+- glyphOrder sin duplicados; glifos originales intactos; nombres con " AI"
 
 Uso:
     python verify.py <carpeta_originales> <carpeta_patched>
@@ -16,7 +16,7 @@ import sys
 
 from fontTools.ttLib import TTFont
 
-from patch_all import FAMILY_SUFFIX, GLYPH_MAP, GLYPH_PREFIX, variant
+from patch_all import FAMILY_SUFFIX, FILE_SUFFIX, GLYPH_MAP, GLYPH_PREFIX, variant
 
 CENTER_TOLERANCE = 2  # unidades de redondeo
 
@@ -74,8 +74,11 @@ def check(src_path, out_path):
         errors.append(f"{len(changed)} glifos originales cambiaron métricas")
 
     for record in out["name"].names:
-        if record.nameID in (1, 16) and FAMILY_SUFFIX.strip() not in record.toUnicode():
-            errors.append(f"nameID {record.nameID} sin sufijo: {record.toUnicode()!r}")
+        s = record.toUnicode()
+        if record.nameID in (1, 16) and FAMILY_SUFFIX not in s:
+            errors.append(f"nameID {record.nameID} sin sufijo: {s!r}")
+        if record.nameID == 1 and len(s) > 31:
+            errors.append(f"nameID 1 de {len(s)} caracteres (> 31): {s!r}")
 
     src.close()
     out.close()
@@ -89,7 +92,7 @@ def main():
     pairs = []
     for src_path in sorted(glob.glob(os.path.join(src_dir, "*.ttf"))):
         stem, ext = os.path.splitext(os.path.basename(src_path))
-        pairs.append((src_path, os.path.join(out_dir, f"{stem}-Patched{ext}")))
+        pairs.append((src_path, os.path.join(out_dir, f"{stem}{FILE_SUFFIX}{ext}")))
 
     failed = 0
     for src_path, out_path in pairs:

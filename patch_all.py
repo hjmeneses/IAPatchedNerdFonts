@@ -9,7 +9,7 @@ que Nerd Fonts todavía no incluye.
 - Propo: caja de UPM x UPM; avance = ancho del icono
 - Centra verticalmente en (sTypoAscender + sTypoDescender) / 2
 - Inserta en todas las subtablas cmap Unicode (formato 4 y 12)
-- Agrega " Patched" a la familia y "Patched" al nombre PostScript
+- Agrega " AI" a la familia y "AI" al nombre PostScript (familia <= 31 caracteres)
 
 Uso:
     python patch_all.py <carpeta_ttf> --devicons <devicons.ttf> [-o Patched]
@@ -38,8 +38,9 @@ GLYPH_MAP = {
 }
 
 GLYPH_PREFIX = "ai-"
-FAMILY_SUFFIX = " Patched"
-PS_SUFFIX = "Patched"
+FAMILY_SUFFIX = " AI"
+PS_SUFFIX = "AI"
+FILE_SUFFIX = "-AI"
 VERSION_NOTE = "; AI icons (devicons 2.4.0)"
 # Tablas que dependen de numGlyphs y quedarían inválidas al agregar glifos
 DROP_TABLES = ("hdmx", "LTSH", "VDMX")
@@ -91,7 +92,7 @@ def build_glyph(dev, src_name, font, kind):
 
 
 def rename(font):
-    """Inserta el sufijo tras la familia: 'CaskaydiaCove NFM SemiLight' -> 'CaskaydiaCove NFM Patched SemiLight'."""
+    """Inserta el sufijo tras la familia: 'CaskaydiaCove NFM SemiLight' -> 'CaskaydiaCove NFM AI SemiLight'."""
     names = font["name"]
     bases = {r.toUnicode() for r in names.names if r.nameID == 16}
     if not bases:
@@ -147,7 +148,7 @@ def patch_font(path, dev, out_dir):
     rename(font)
 
     stem, ext = os.path.splitext(os.path.basename(path))
-    out_path = os.path.join(out_dir, f"{stem}-Patched{ext}")
+    out_path = os.path.join(out_dir, f"{stem}{FILE_SUFFIX}{ext}")
     font.save(out_path)
     font.close()
     return kind, out_path
@@ -165,7 +166,7 @@ def main():
     if missing:
         sys.exit(f"devicons.ttf no tiene: {', '.join(missing)}")
 
-    fonts = sorted(f for f in glob.glob(os.path.join(args.src, "*.ttf")) if "-Patched" not in f)
+    fonts = sorted(f for f in glob.glob(os.path.join(args.src, "*.ttf")) if FILE_SUFFIX not in os.path.basename(f))
     if not fonts:
         sys.exit(f"No hay .ttf sin parchear en {args.src}")
 

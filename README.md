@@ -1,4 +1,4 @@
-# CaskaydiaCove Nerd Font — Patched with AI Icons
+# CaskaydiaCove Nerd Font — AI Icons
 
 [CaskaydiaCove Nerd Font](https://github.com/ryanoasis/nerd-fonts) **v3.5.1** extended with AI tool icons that Nerd Fonts does not ship yet, taken from [devicons](https://github.com/vorillaz/devicons) **v2.4.0**.
 
@@ -34,7 +34,7 @@ Nerd Fonts appends new icons to the end of each icon set's block (Devicons `U+E7
 
 Download the zip from [Releases](../../releases), extract it, select the `.ttf` files, and choose **Install** (or **Install for all users**).
 
-The fonts install as a separate family (`CaskaydiaCove NF Patched`, `CaskaydiaCove NFM Patched`, `CaskaydiaCove NFP Patched`), so they can live side by side with the upstream Nerd Font.
+The fonts install as a separate family (`CaskaydiaCove NF AI`, `CaskaydiaCove NFM AI`, `CaskaydiaCove NFP AI`), so they can live side by side with the upstream Nerd Font.
 
 | Variant | Use it when |
 |---------|-------------|
@@ -60,8 +60,8 @@ pip install fonttools
 # 2. devicons v2.4.0 (dist/devicons.ttf inside the npm package)
 #    https://registry.npmjs.org/devicons/-/devicons-2.4.0.tgz
 
-python patch_all.py <folder-with-ttf> --devicons <path\to\devicons.ttf> -o Patched
-python verify.py <folder-with-ttf> Patched
+python patch_all.py <folder-with-ttf> --devicons <path\to\devicons.ttf> -o out
+python verify.py <folder-with-ttf> out
 ```
 
 `patch_all.py`:
@@ -72,7 +72,7 @@ python verify.py <folder-with-ttf> Patched
 - **Propo**: UPM-sized icon, with an advance equal to the icon width.
 - Centers icons vertically on `(sTypoAscender + sTypoDescender) / 2`.
 - Adds the glyphs to every Unicode `cmap` subtable (formats 4 and 12).
-- Renames the family to `… Patched` and the PostScript name to `…Patched-Style`, and appends a note to the version string.
+- Renames the family to `… AI` (e.g. `CaskaydiaCove NFM AI SemiBold`, within the 31-character limit older apps use) and the PostScript name to `…AI-Style`, and appends a note to the version string.
 - Refuses to patch a font that already uses these codepoints, for example a font that was already patched.
 
 `verify.py` compares each output font with its source and checks codepoints, advances, the cell box, vertical centering, a duplicate-free glyph order, unchanged original metrics, and names. The release fonts also pass [OpenType Sanitizer](https://github.com/khaledhosny/ots-python) (`python -m ots`).
