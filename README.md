@@ -137,6 +137,8 @@ How the color works:
 
 A common use: show which AI tool a folder is set up for (`.claude/`, `.kiro/`, `.agents/`…).
 
+![Oh My Posh prompt showing the Claude, Kiro, Copilot and Antigravity segments](prompt-example.png)
+
 ### Oh My Posh (PowerShell)
 
 Oh My Posh cannot check for a folder by itself, so set an environment variable in your profile before each prompt:
