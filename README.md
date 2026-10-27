@@ -139,23 +139,9 @@ A common use: show which AI tool a folder is set up for (`.claude/`, `.kiro/`, `
 
 ![Oh My Posh prompt showing the Claude, Kiro, Copilot and Antigravity segments](prompt-example.png)
 
-### Oh My Posh (PowerShell)
+### Oh My Posh
 
-Oh My Posh cannot check for a folder by itself, so set an environment variable in your profile before each prompt:
-
-```powershell
-oh-my-posh init pwsh --config $theme | Invoke-Expression
-
-$Global:_ompPrompt = $Function:prompt
-$Function:prompt = {
-    $env:HAS_CLAUDE = if (Test-Path '.claude') { '1' } else { '' }
-    $env:HAS_KIRO   = if (Test-Path '.kiro')   { '1' } else { '' }
-    $env:HAS_AGY    = if ((Test-Path '.agents') -or (Test-Path '.agent')) { '1' } else { '' }
-    & $Global:_ompPrompt
-}
-```
-
-and read it from a `text` segment in the theme:
+Use the `glob` template function, which checks the current folder, so no shell setup is needed:
 
 ```json
 {
@@ -165,9 +151,11 @@ and read it from a `text` segment in the theme:
   "foreground": "#cc785c",
   "leading_diamond": "\ue0b6",
   "trailing_diamond": "\ue0b4",
-  "template": "{{ if .Env.HAS_CLAUDE }} \ue00b Claude{{ end }}"
+  "template": "{{ if glob \".claude\" }} \ue00b Claude{{ end }}"
 }
 ```
+
+Combine checks with `or`, e.g. for Antigravity: `{{ if or (glob \".agents\") (glob \".agent\") }}`.
 
 Repeat the segment with `\ue012` for Kiro, `\ue011` for Antigravity, or `\uec1e` (`nf-cod-copilot`) for GitHub Copilot. An empty template hides the segment.
 
