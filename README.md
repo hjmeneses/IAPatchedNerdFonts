@@ -133,6 +133,60 @@ How the color works:
 - Colors are stored as **COLR v0 + CPAL** layers, the color font format Windows Terminal renders. Windows Terminal ignores COLR v1 gradients, so gradients and blurred meshes (Gemini, Copilot, Antigravity) are approximated with a 32×32 grid of solid-color tiles, each with the average color of that area of the rendered SVG. Each icon is reduced to at most 48 colors, and all tiles of the same color are merged into one layer, so the font stays small (about 130 KB). At terminal sizes each tile is about one pixel. Single-color logos (Claude Code, DeepSeek) are one exact layer.
 - Color icons ignore the text color set by your theme.
 
+## Showing the AI tool of a project in your prompt
+
+A common use: show which AI tool a folder is set up for (`.claude/`, `.kiro/`, `.agents/`…).
+
+### Oh My Posh (PowerShell)
+
+Oh My Posh cannot check for a folder by itself, so set an environment variable in your profile before each prompt:
+
+```powershell
+oh-my-posh init pwsh --config $theme | Invoke-Expression
+
+$Global:_ompPrompt = $Function:prompt
+$Function:prompt = {
+    $env:HAS_CLAUDE = if (Test-Path '.claude') { '1' } else { '' }
+    $env:HAS_KIRO   = if (Test-Path '.kiro')   { '1' } else { '' }
+    $env:HAS_AGY    = if ((Test-Path '.agents') -or (Test-Path '.agent')) { '1' } else { '' }
+    & $Global:_ompPrompt
+}
+```
+
+and read it from a `text` segment in the theme:
+
+```json
+{
+  "type": "text",
+  "style": "diamond",
+  "background": "#1a1a2e",
+  "foreground": "#cc785c",
+  "leading_diamond": "\ue0b6",
+  "trailing_diamond": "\ue0b4",
+  "template": "{{ if .Env.HAS_CLAUDE }} \ue00b Claude{{ end }}"
+}
+```
+
+Repeat the segment with `\ue012` for Kiro, `\ue011` for Antigravity, or `\uec1e` (`nf-cod-copilot`) for GitHub Copilot. An empty template hides the segment.
+
+### Starship
+
+Starship detects folders natively with a `custom` module:
+
+```toml
+[custom.claude]
+detect_folders = [".claude"]
+symbol = "\ue00b "
+format = "[$symbol]($style)"
+style = "#cc785c"
+
+[custom.kiro]
+detect_folders = [".kiro"]
+symbol = "\ue012 "
+format = "[$symbol]($style)"
+style = "#ff9900"
+```
+
 ## Building the fonts yourself
 
 ```powershell
