@@ -1,0 +1,279 @@
+# Iconos de IA y versiones de upstream. Es la única fuente de datos de patch_all.py,
+# build_symbols.py, los verificadores y las tablas del README (python icons.py readme).
+#
+# Agregar un icono: un [[icon]] con el siguiente codepoint libre del rango y el nombre
+# del glifo en devicons (dist/devicons.ttf). CI construye y verifica las fuentes.
+
+[upstream]
+nerd_fonts = "3.5.1"   # release de ryanoasis/nerd-fonts (CascadiaCode.tar.xz)
+devicons = "2.4.0"     # paquete npm devicons
+
+# Hueco libre tras Pomicons (U+E000–E00A), que no ha cambiado en años. patch_all.py
+# se niega a parchear si la fuente de Nerd Fonts ya tiene algún glifo en el rango.
+[range]
+start = "E00B"
+end = "E09F"
+
+# [[icon]]: en las fuentes parcheadas y en AI Symbols
+#   cp     codepoint
+#   name   glifo de devicons
+#   label  nombre para el README
+#   group  encabezado de sección en el README (desde ese icono)
+#   color  true: capas COLR con los colores del SVG en AI Symbols. Sin color: logos
+#          negros (Anthropic, Ollama, Grok...) y los que tienen un contorno monocromo
+#          que no coincide con el SVG a color: Kiro (fantasma blanco sobre fondo
+#          violeta), Cursor (cubo gris), Hugging Face (dibujo de líneas) y Warp (logo
+#          sobre un cuadrado oscuro)
+#
+# Claude, OpenAI y MCP ya existen en Nerd Fonts: nf-cod-claude U+EC82,
+# nf-cod-openai U+EC81, nf-cod-mcp U+EC47.
+
+[[icon]]
+cp = "E00B"
+name = "claude-code"
+label = "Claude Code (robot)"
+color = true
+
+[[icon]]
+cp = "E00C"
+name = "anthropic-icon"
+label = "Anthropic"
+
+[[icon]]
+cp = "E00D"
+name = "google-gemini-icon"
+label = "Google Gemini"
+color = true
+
+[[icon]]
+cp = "E00E"
+name = "ollama-icon"
+label = "Ollama"
+
+[[icon]]
+cp = "E00F"
+name = "cursor-icon"
+label = "Cursor (editor)"
+
+[[icon]]
+cp = "E010"
+name = "microsoft-copilot"
+label = "Microsoft Copilot"
+color = true
+
+[[icon]]
+cp = "E011"
+name = "google-antigravity-icon"
+label = "Google Antigravity"
+color = true
+
+[[icon]]
+cp = "E012"
+name = "kiro-icon"
+label = "Kiro"
+
+[[icon]]
+cp = "E013"
+name = "aws-bedrock-icon"
+label = "AWS Bedrock"
+group = "Models and providers"
+color = true
+
+[[icon]]
+cp = "E014"
+name = "deepseek"
+label = "DeepSeek"
+color = true
+
+[[icon]]
+cp = "E015"
+name = "mistral-ai-icon"
+label = "Mistral AI"
+color = true
+
+[[icon]]
+cp = "E016"
+name = "meta-icon"
+label = "Meta (Llama)"
+color = true
+
+[[icon]]
+cp = "E017"
+name = "qwen-icon"
+label = "Qwen"
+color = true
+
+[[icon]]
+cp = "E018"
+name = "google-gemma-icon"
+label = "Google Gemma"
+color = true
+
+[[icon]]
+cp = "E019"
+name = "hugging-face-icon"
+label = "Hugging Face"
+
+[[icon]]
+cp = "E01A"
+name = "grok-icon"
+label = "Grok (xAI)"
+
+[[icon]]
+cp = "E01B"
+name = "openrouter-icon"
+label = "OpenRouter"
+group = "Platforms and local inference"
+color = true
+
+[[icon]]
+cp = "E01C"
+name = "google-vertex-ai-icon"
+label = "Google Vertex AI"
+color = true
+
+[[icon]]
+cp = "E01D"
+name = "google-ai-studio-icon"
+label = "Google AI Studio"
+color = true
+
+[[icon]]
+cp = "E01E"
+name = "microsoft-azure-ai"
+label = "Azure AI Foundry"
+color = true
+
+[[icon]]
+cp = "E01F"
+name = "lm-studio-icon"
+label = "LM Studio"
+
+[[icon]]
+cp = "E020"
+name = "groq"
+label = "Groq"
+
+[[icon]]
+cp = "E021"
+name = "codex-icon"
+label = "OpenAI Codex"
+group = "Coding agents and editors"
+color = true
+
+[[icon]]
+cp = "E022"
+name = "windsurf-icon"
+label = "Windsurf"
+
+[[icon]]
+cp = "E023"
+name = "cline"
+label = "Cline"
+
+[[icon]]
+cp = "E024"
+name = "zed"
+label = "Zed"
+
+[[icon]]
+cp = "E025"
+name = "warp"
+label = "Warp"
+
+[[icon]]
+cp = "E026"
+name = "devin-icon"
+label = "Devin"
+
+[[icon]]
+cp = "E027"
+name = "lovable-icon"
+label = "Lovable"
+color = true
+
+[[icon]]
+cp = "E028"
+name = "google-notebooklm-icon"
+label = "NotebookLM"
+color = true
+
+[[icon]]
+cp = "E029"
+name = "langchain"
+label = "LangChain"
+group = "Frameworks"
+color = true
+
+[[icon]]
+cp = "E02A"
+name = "llamaindex-icon"
+label = "LlamaIndex"
+
+[[icon]]
+cp = "E02B"
+name = "crewai-icon"
+label = "CrewAI"
+
+[[icon]]
+cp = "E02C"
+name = "dify-icon"
+label = "Dify"
+color = true
+
+# [[variant]]: versión a color de un icono que Nerd Fonts ya trae en monocromo. Solo en
+# AI Symbols. El codepoint de Nerd Fonts da el icono en el color del tema y este, el
+# color de marca. verify.py comprueba que nf_cp siga existiendo en Nerd Fonts.
+# OpenAI y GitHub Copilot no están: en devicons también son negros.
+#   nf_cp, nf_name  icono equivalente en Nerd Fonts
+#   note            texto opcional para el README
+
+[[variant]]
+cp = "E060"
+name = "claude-icon"
+label = "Claude"
+nf_cp = "EC82"
+nf_name = "nf-cod-claude"
+
+[[variant]]
+cp = "E061"
+name = "pytorch-icon"
+label = "PyTorch"
+nf_cp = "E87B"
+nf_name = "nf-dev-pytorch"
+
+[[variant]]
+cp = "E062"
+name = "tensorflow"
+label = "TensorFlow"
+nf_cp = "E8BC"
+nf_name = "nf-dev-tensorflow"
+
+[[variant]]
+cp = "E063"
+name = "replit-icon"
+label = "Replit"
+nf_cp = "E88E"
+nf_name = "nf-dev-replit"
+
+[[variant]]
+cp = "E064"
+name = "microsoft-azure"
+label = "Azure"
+nf_cp = "E754"
+nf_name = "nf-dev-azure"
+
+[[variant]]
+cp = "E065"
+name = "jupyter"
+label = "Jupyter"
+nf_cp = "E80F"
+nf_name = "nf-dev-jupyter"
+
+[[variant]]
+cp = "E066"
+name = "aws"
+label = "AWS"
+nf_cp = "E7AD"
+nf_name = "nf-dev-aws"
+note = "the dark \"aws\" lettering is hard to see on dark backgrounds"

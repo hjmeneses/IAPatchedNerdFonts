@@ -1,0 +1,52 @@
+# Al hacer push de un tag v*, construye las fuentes y crea una release en borrador con
+# los dos zips. Las notas se escriben a mano antes de publicarla.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: ./.github/actions/build
+        id: build
+
+      - name: Zips
+        env:
+          TAG: ${{ github.ref_name }}
+          DEV: ${{ steps.build.outputs.devicons }}
+        run: |
+          cp OFL.txt Patched/
+          cat > Symbols/NOTICE.txt <<EOF
+          AI Symbols $TAG
+
+          Icons from devicons v$DEV (https://github.com/vorillaz/devicons), released under the MIT License
+          (see the devicons repository for the full license text).
+
+          The logos are trademarks of their respective owners and are included only to identify those tools.
+
+          Windows Terminal: "font": { "face": "CaskaydiaCove Nerd Font, AI Symbols" }
+          Use AI Symbols Mono after an NFM (Mono) font.
+          EOF
+          (cd Patched && zip -q "../CaskaydiaCove-NerdFont-AI-$TAG.zip" *.ttf OFL.txt)
+          (cd Symbols && zip -q "../AISymbols-$TAG.zip" *.ttf NOTICE.txt)
+          unzip -l "CaskaydiaCove-NerdFont-AI-$TAG.zip" | tail -1
+          unzip -l "AISymbols-$TAG.zip"
+
+      - name: Release en borrador
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          NF: ${{ steps.build.outputs.nerd-fonts }}
+          DEV: ${{ steps.build.outputs.devicons }}
+        run: |
+          gh release create "$TAG" --draft --title "$TAG" \
+            --notes "CaskaydiaCove Nerd Font **v$NF** with AI tool icons from devicons **v$DEV**. Draft: write the notes before publishing." \
+            "CaskaydiaCove-NerdFont-AI-$TAG.zip" "AISymbols-$TAG.zip"

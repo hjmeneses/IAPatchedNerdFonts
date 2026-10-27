@@ -1,6 +1,10 @@
 # CaskaydiaCove Nerd Font — AI Icons
 
+<!-- generated:upstream -->
+
 [CaskaydiaCove Nerd Font](https://github.com/ryanoasis/nerd-fonts) **v3.5.1** extended with AI tool icons that Nerd Fonts does not ship yet, taken from [devicons](https://github.com/vorillaz/devicons) **v2.4.0**.
+
+<!-- /generated:upstream -->
 
 Two ways to get them:
 
@@ -10,6 +14,8 @@ Two ways to get them:
 ![Every icon in the patched font (monochrome) and in AI Symbols (color), plus the color variants next to the official Nerd Fonts icons](preview.png)
 
 ## Included glyphs
+
+<!-- generated:glyphs -->
 
 | Codepoint | Icon | devicons glyph |
 |-----------|------|----------------|
@@ -52,6 +58,8 @@ Two ways to get them:
 | `U+E02B` | CrewAI | `crewai-icon` |
 | `U+E02C` | Dify | `dify-icon` |
 
+<!-- /generated:glyphs -->
+
 ### Already in Nerd Fonts — use the official codepoints
 
 Since v3.5.1, Nerd Fonts includes these through Codicons, so this patch does not duplicate them:
@@ -81,9 +89,13 @@ The fonts install as a separate family (`CaskaydiaCove NF AI`, `CaskaydiaCove NF
 
 To check the glyphs in your terminal:
 
+<!-- generated:check -->
+
 ```powershell
 0xE00B..0xE02C | ForEach-Object { "$([char]$_)  U+{0:X4}" -f $_ }
 ```
+
+<!-- /generated:check -->
 
 In an Oh My Posh theme, use the escape sequence, e.g. `""` for the Claude Code robot.
 
@@ -91,14 +103,20 @@ In an Oh My Posh theme, use the escape sequence, e.g. `""` for the Claude Cod
 
 **AI Symbols** is a small font with *only* these icons, at the same codepoints. Instead of patching your font, you list it after your regular Nerd Font, and the terminal takes the icons from it. Nerd Fonts stays untouched and monochrome; the AI icons come in color.
 
+<!-- generated:symbols -->
+
 | Icon | In AI Symbols |
 |------|---------------|
-| Claude Code, Gemini, Microsoft Copilot, Antigravity, AWS Bedrock, DeepSeek, Mistral AI, Meta, Qwen, Gemma, OpenRouter, Vertex AI, AI Studio, Azure AI Foundry, Codex, Lovable, NotebookLM, LangChain, Dify | **Color** (brand colors from the devicons SVGs) |
-| Anthropic, Ollama, Cursor, Kiro, Hugging Face, Grok, LM Studio, Groq, Windsurf, Cline, Zed, Warp, Devin, LlamaIndex, CrewAI | Monochrome: they take your theme's color, like any Nerd Fonts icon. Black logos, or logos whose monochrome outline does not match the color artwork |
+| Claude Code (robot), Google Gemini, Microsoft Copilot, Google Antigravity, AWS Bedrock, DeepSeek, Mistral AI, Meta (Llama), Qwen, Google Gemma, OpenRouter, Google Vertex AI, Google AI Studio, Azure AI Foundry, OpenAI Codex, Lovable, NotebookLM, LangChain, Dify | **Color** (brand colors from the devicons SVGs) |
+| Anthropic, Ollama, Cursor (editor), Kiro, Hugging Face, Grok (xAI), LM Studio, Groq, Windsurf, Cline, Zed, Warp, Devin, LlamaIndex, CrewAI | Monochrome: they take your theme's color, like any Nerd Fonts icon. Black logos, or logos whose monochrome outline does not match the color artwork |
+
+<!-- /generated:symbols -->
 
 ### Color variants of icons Nerd Fonts already has
 
 AI Symbols also has **color versions** of some icons that Nerd Fonts ships in monochrome. Use the Nerd Fonts codepoint when you want the icon in your theme's color, and the AI Symbols one when you want the brand colors. These are only in AI Symbols, not in the patched fonts.
+
+<!-- generated:variants -->
 
 | Color (AI Symbols) | Monochrome (Nerd Fonts) | Icon |
 |--------------------|-------------------------|------|
@@ -109,6 +127,8 @@ AI Symbols also has **color versions** of some icons that Nerd Fonts ships in mo
 | `U+E064` | `U+E754` `nf-dev-azure` | Azure |
 | `U+E065` | `U+E80F` `nf-dev-jupyter` | Jupyter |
 | `U+E066` | `U+E7AD` `nf-dev-aws` | AWS (the dark "aws" lettering is hard to see on dark backgrounds) |
+
+<!-- /generated:variants -->
 
 OpenAI and GitHub Copilot have no color variant: they are black in devicons too.
 
@@ -177,28 +197,48 @@ format = "[$symbol]($style)"
 style = "#ff9900"
 ```
 
+## Adding an icon
+
+Icons and upstream versions live in [`icons.toml`](icons.toml), the only place to edit. The scripts and the tables in this README read it.
+
+1. Find the glyph name in devicons (`dist/devicons.ttf`).
+2. Add an `[[icon]]` with the next free codepoint, which `python icons.py check` prints. Add `color = true` if the brand colors of the SVG should be used in AI Symbols.
+3. Run `python icons.py readme` to update the tables, and open a pull request.
+
+`icons.py` rejects repeated codepoints or glyph names, codepoints outside `U+E00B–E09F`, and missing fields.
+
+## CI
+
+| Workflow | When | What it does |
+|----------|------|--------------|
+| [`build.yml`](.github/workflows/build.yml) | Every push and pull request | Validates `icons.toml` and that the README is up to date, builds both font sets, runs `verify.py`, `verify_symbols.py` and OpenType Sanitizer, and attaches the fonts to the run |
+| [`upstream.yml`](.github/workflows/upstream.yml) | Mondays, or by hand | If Nerd Fonts or devicons has a new version, updates `icons.toml`, builds, and opens a pull request. If the build fails, the pull request is a draft |
+| [`release.yml`](.github/workflows/release.yml) | Pushing a `v*` tag | Builds and creates a draft release with both zips |
+
 ## Building the fonts yourself
 
-```powershell
-pip install fonttools
+Download the versions in `icons.toml`:
 
-# 1. CaskaydiaCove Nerd Font v3.5.1
-#    https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/CascadiaCode.tar.xz
-# 2. devicons v2.4.0 (dist/devicons.ttf inside the npm package)
-#    https://registry.npmjs.org/devicons/-/devicons-2.4.0.tgz
+<!-- generated:sources -->
 
-python patch_all.py <folder-with-ttf> --devicons <path\to\devicons.ttf> -o out
-python verify.py <folder-with-ttf> out
+```text
+CaskaydiaCove Nerd Font v3.5.1  https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/CascadiaCode.tar.xz
+devicons v2.4.0                https://registry.npmjs.org/devicons/-/devicons-2.4.0.tgz
 ```
 
-AI Symbols needs the whole devicons package (`dist/devicons.ttf` and `dist/sprite-symbol.svg`):
+<!-- /generated:sources -->
 
 ```powershell
-pip install fonttools skia-pathops resvg-py pillow
+pip install -r requirements.txt
 
-python build_symbols.py --devicons-pkg <path\to\devicons\package> -o Symbols
+python patch_all.py <folder-with-ttf> --devicons <devicons\package\dist\devicons.ttf> -o Patched
+python verify.py <folder-with-ttf> Patched
+
+python build_symbols.py --devicons-pkg <devicons\package> --reference <folder-with-ttf>\CaskaydiaCoveNerdFont-Regular.ttf -o Symbols
 python verify_symbols.py Symbols
 ```
+
+AI Symbols needs the whole devicons package (`dist/devicons.ttf` and `dist/sprite-symbol.svg`).
 
 `patch_all.py`:
 
@@ -209,15 +249,16 @@ python verify_symbols.py Symbols
 - Centers icons vertically on `(sTypoAscender + sTypoDescender) / 2`.
 - Adds the glyphs to every Unicode `cmap` subtable (formats 4 and 12).
 - Renames the family to `… AI` (e.g. `CaskaydiaCove NFM AI SemiBold`, within the 31-character limit older apps use) and the PostScript name to `…AI-Style`, and appends a note to the version string.
-- Refuses to patch a font that already uses these codepoints, for example a font that was already patched.
 
-`build_symbols.py` builds both AI Symbols families with the same geometry as `patch_all.py` (shared `icon_transform`) and the vertical metrics and cell width of CaskaydiaCove Nerd Font 3.5.1. `verify_symbols.py` checks codepoints, advances, the cell and vertical boxes, and that every COLR layer exists, stays inside its icon, and uses a valid palette index.
+- Refuses to patch a font that already has glyphs in `U+E00B–E09F`, for example a font that was already patched, or a future Nerd Fonts release that started using the range.
 
-`verify.py` compares each output font with its source and checks codepoints, advances, the cell box, vertical centering, a duplicate-free glyph order, unchanged original metrics, and names. The release fonts also pass [OpenType Sanitizer](https://github.com/khaledhosny/ots-python) (`python -m ots`).
+`build_symbols.py` builds both AI Symbols families with the same geometry as `patch_all.py` (shared `icon_transform`), reading the vertical metrics and cell width from the `--reference` font. `verify_symbols.py` checks codepoints, advances, the cell and vertical boxes, and that every COLR layer exists, stays inside its icon, and uses a valid palette index.
+
+`verify.py` compares each output font with its source and checks codepoints, advances, the cell box, vertical centering, a duplicate-free glyph order, unchanged original metrics, names, and that the Nerd Fonts icons of the color variants still exist. The release fonts also pass [OpenType Sanitizer](https://github.com/khaledhosny/ots-python) (`python -m ots`).
 
 ## Licenses
 
 - **Fonts**: SIL Open Font License 1.1 — see [`OFL.txt`](OFL.txt). This applies to Cascadia Code (© Microsoft, Reserved Font Name *Cascadia Code*), to the Nerd Fonts patches, and to these modified versions, which must remain under the OFL.
 - **Icons**: from [devicons](https://github.com/vorillaz/devicons) (MIT). The logos are trademarks of their respective owners and are included only to identify those tools.
 - **AI Symbols**: built only from devicons glyphs and SVGs (MIT).
-- **Scripts** (`patch_all.py`, `verify.py`, `build_symbols.py`, `verify_symbols.py`): GNU GPL v3 — see [`LICENSE`](LICENSE).
+- **Scripts** (`icons.py`, `patch_all.py`, `verify.py`, `build_symbols.py`, `verify_symbols.py`): GNU GPL v3 — see [`LICENSE`](LICENSE).

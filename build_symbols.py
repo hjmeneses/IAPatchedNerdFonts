@@ -3,8 +3,9 @@ Genera AI Symbols: una fuente que solo contiene los iconos de IA, para usarla co
 fallback detrás de cualquier fuente en la lista del terminal, por ejemplo en
 Windows Terminal: "font": {"face": "CaskaydiaCove Nerd Font, AI Symbols"}.
 
-- Mismos codepoints y misma geometría que patch_all.py (GLYPH_MAP, icon_transform)
-- Métricas verticales y celda de CaskaydiaCove Nerd Font 3.5.1
+- Iconos y versiones de upstream: icons.toml (GLYPH_MAP, COLOR_ICONS, COLOR_VARIANTS)
+- Misma geometría que patch_all.py (icon_transform)
+- Métricas verticales y celda leídas de la fuente de referencia (CaskaydiaCove Nerd Font)
 - AI Symbols:      iconos de UPM x UPM, avance = 1 celda (desbordan, como en NF)
   AI Symbols Mono: iconos de 1 celda, centrados
 - Contorno monocromo de devicons.ttf como glifo base: sin soporte de color se ve
@@ -19,7 +20,8 @@ Windows Terminal: "font": {"face": "CaskaydiaCove Nerd Font, AI Symbols"}.
     teselas del mismo color se unen en una sola capa
 
 Uso:
-    python build_symbols.py --devicons-pkg <carpeta package del npm devicons 2.4.0> [-o out]
+    python build_symbols.py --devicons-pkg <carpeta package del npm devicons> \
+        --reference <CaskaydiaCoveNerdFont-Regular.ttf> [-o out]
 """
 import argparse
 import io
@@ -37,52 +39,8 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
 from PIL import Image
 
-from patch_all import GLYPH_MAP, GLYPH_PREFIX, icon_transform
-
-# Logos con color de marca. Quedan monocromos y toman el color del tema: los negros
-# (Anthropic, Ollama, Grok...) y los que tienen un contorno monocromo que no coincide
-# con el SVG a color: Kiro (fantasma blanco sobre fondo violeta), Cursor (cubo gris),
-# Hugging Face (dibujo de líneas) y Warp (logo sobre un cuadrado oscuro)
-COLOR_ICONS = {
-    "claude-code",
-    "google-gemini-icon",
-    "microsoft-copilot",
-    "google-antigravity-icon",
-    "aws-bedrock-icon",
-    "deepseek",
-    "mistral-ai-icon",
-    "meta-icon",
-    "qwen-icon",
-    "google-gemma-icon",
-    "openrouter-icon",
-    "google-vertex-ai-icon",
-    "google-ai-studio-icon",
-    "microsoft-azure-ai",
-    "codex-icon",
-    "lovable-icon",
-    "google-notebooklm-icon",
-    "langchain",
-    "dify-icon",
-}
-
-# Versiones a color de iconos que Nerd Fonts ya trae en monocromo. Usa el codepoint
-# de Nerd Fonts para el icono del tema y este para el color de marca.
-# OpenAI y GitHub Copilot no están: en devicons también son negros.
-COLOR_VARIANTS = {
-    0xE060: "claude-icon",          # nf-cod-claude      U+EC82
-    0xE061: "pytorch-icon",         # nf-dev-pytorch     U+E87B
-    0xE062: "tensorflow",           # nf-dev-tensorflow  U+E8BC
-    0xE063: "replit-icon",          # nf-dev-replit      U+E88E
-    0xE064: "microsoft-azure",      # nf-dev-azure       U+E754
-    0xE065: "jupyter",              # nf-dev-jupyter     U+E80F
-    0xE066: "aws",                  # nf-dev-aws         U+E7AD
-}
-ALL_ICONS = {**GLYPH_MAP, **COLOR_VARIANTS}
-
-# Métricas de CaskaydiaCove Nerd Font 3.5.1 (NF y Mono son iguales)
-UPM = 2048
-ASCENT, DESCENT = 1900, -480
-CELL = 1200
+from icons import ALL_ICONS, COLOR_ICONS, COLOR_VARIANTS, DEVICONS, SYMBOLS_FAMILIES as FAMILIES
+from patch_all import GLYPH_PREFIX, icon_transform
 
 GRID = 32            # teselas por lado
 RENDER = 640         # px del render del SVG (20 px por tesela)
@@ -91,7 +49,16 @@ SOLID_TOLERANCE = 6  # diferencia máx. por canal (0-255) para tratar el icono c
 MAX_COLORS = 48      # colores por icono: las teselas de un mismo color se unen en una capa
 
 VERSION = "1.000"
-FAMILIES = {"nf": "AI Symbols", "mono": "AI Symbols Mono"}
+
+
+def reference_metrics(path):
+    """(UPM, ascent, descent, celda) de la fuente de referencia; NF y Mono son iguales."""
+    font = TTFont(path)
+    os2 = font["OS/2"]
+    metrics = (font["head"].unitsPerEm, os2.sTypoAscender, os2.sTypoDescender,
+               font["hmtx"][font.getBestCmap()[ord("M")]][0])
+    font.close()
+    return metrics
 
 
 def sprite_svg(sprite, name):
@@ -188,10 +155,11 @@ def color_layers(dev, name, sprite):
     return layers
 
 
-def build(dev, sprite, kind, out_dir):
+def build(dev, sprite, kind, metrics, out_dir):
+    upm, ascent, descent, cell = metrics
     family = FAMILIES[kind]
     ps_family = family.replace(" ", "")
-    center_y = (ASCENT + DESCENT) / 2
+    center_y = (ascent + descent) / 2
     gs = dev.getGlyphSet()
 
     glyphs = {".notdef": TTGlyphPen(None).glyph(), "space": TTGlyphPen(None).glyph()}
@@ -200,7 +168,7 @@ def build(dev, sprite, kind, out_dir):
 
     for cp, src_name in sorted(ALL_ICONS.items()):
         name = GLYPH_PREFIX + src_name
-        matrix, _ = icon_transform(dev, src_name, UPM, center_y, CELL, kind)
+        matrix, _ = icon_transform(dev, src_name, upm, center_y, cell, kind)
         pen = TTGlyphPen(None)
         gs[src_name].draw(TransformPen(pen, matrix))
         glyphs[name] = pen.glyph()
@@ -218,31 +186,31 @@ def build(dev, sprite, kind, out_dir):
             layers.append((layer, palette_index[rgb]))
         color_glyphs[name] = layers
 
-    fb = FontBuilder(UPM, isTTF=True)
+    fb = FontBuilder(upm, isTTF=True)
     fb.setupGlyphOrder(list(glyphs))
     fb.setupCharacterMap(cmap)
     fb.setupGlyf(glyphs)
     glyf = fb.font["glyf"]
-    metrics = {}
+    hmetrics = {}
     for name in glyphs:
         glyf[name].recalcBounds(glyf)
-        metrics[name] = (CELL, getattr(glyf[name], "xMin", 0))
-    fb.setupHorizontalMetrics(metrics)
-    fb.setupHorizontalHeader(ascent=ASCENT, descent=DESCENT)
+        hmetrics[name] = (cell, getattr(glyf[name], "xMin", 0))
+    fb.setupHorizontalMetrics(hmetrics)
+    fb.setupHorizontalHeader(ascent=ascent, descent=descent)
     fb.setupNameTable({
         "familyName": family,
         "styleName": "Regular",
         "uniqueFontIdentifier": f"{ps_family}-Regular {VERSION}",
         "fullName": f"{family} Regular",
         "psName": f"{ps_family}-Regular",
-        "version": f"Version {VERSION}; devicons 2.4.0",
+        "version": f"Version {VERSION}; devicons {DEVICONS}",
         "licenseDescription": "Icons from devicons (MIT). Logos are trademarks of their respective owners.",
         "licenseInfoURL": "https://github.com/vorillaz/devicons",
     })
     fb.setupOS2(
-        sTypoAscender=ASCENT, sTypoDescender=DESCENT, sTypoLineGap=0,
-        usWinAscent=ASCENT, usWinDescent=-DESCENT,
-        xAvgCharWidth=CELL, achVendID="NONE", fsType=0,
+        sTypoAscender=ascent, sTypoDescender=descent, sTypoLineGap=0,
+        usWinAscent=ascent, usWinDescent=-descent,
+        xAvgCharWidth=cell, achVendID="NONE", fsType=0,
         panose=_panose(kind),
     )
     fb.setupPost(isFixedPitch=int(kind == "mono"))
@@ -265,9 +233,13 @@ def _panose(kind):
 def main():
     ap = argparse.ArgumentParser(description="Genera la fuente AI Symbols (iconos de IA a color).")
     ap.add_argument("--devicons-pkg", required=True,
-                    help="carpeta 'package' del npm devicons 2.4.0 (con dist/devicons.ttf y dist/sprite-symbol.svg)")
+                    help=f"carpeta 'package' del npm devicons {DEVICONS} (con dist/devicons.ttf y dist/sprite-symbol.svg)")
+    ap.add_argument("--reference", required=True,
+                    help="CaskaydiaCove Nerd Font de la que se toman UPM, métricas verticales y celda")
     ap.add_argument("-o", "--out", default="Symbols", help="carpeta de salida (default: Symbols)")
     args = ap.parse_args()
+
+    metrics = reference_metrics(args.reference)
 
     dist = os.path.join(args.devicons_pkg, "dist")
     dev = TTFont(os.path.join(dist, "devicons.ttf"))
@@ -279,7 +251,7 @@ def main():
 
     os.makedirs(args.out, exist_ok=True)
     for kind in FAMILIES:
-        path, n_glyphs, layers, n_colors = build(dev, sprite, kind, args.out)
+        path, n_glyphs, layers, n_colors = build(dev, sprite, kind, metrics, args.out)
         detail = ", ".join(f"{n.removeprefix(GLYPH_PREFIX)}={c}" for n, c in layers.items())
         print(f"  {os.path.basename(path)}: {n_glyphs} glifos, {n_colors} colores | capas: {detail}")
     dev.close()

@@ -1,6 +1,6 @@
 """
-Parchea las fuentes CaskaydiaCove Nerd Font (v3.5.1) con iconos de IA de devicons
-que Nerd Fonts todavía no incluye.
+Parchea las fuentes CaskaydiaCove Nerd Font con iconos de IA de devicons que Nerd Fonts
+todavía no incluye. Iconos y versiones de upstream: icons.toml.
 
 - Escala por em de devicons (como font-patcher), no por glifo, para conservar
   las proporciones relativas entre iconos
@@ -10,6 +10,7 @@ que Nerd Fonts todavía no incluye.
 - Centra verticalmente en (sTypoAscender + sTypoDescender) / 2
 - Inserta en todas las subtablas cmap Unicode (formato 4 y 12)
 - Agrega " AI" a la familia y "AI" al nombre PostScript (familia <= 31 caracteres)
+- Se niega a parchear si la fuente ya tiene glifos en el rango de icons.toml
 
 Uso:
     python patch_all.py <carpeta_ttf> --devicons <devicons.ttf> [-o Patched]
@@ -24,56 +25,13 @@ from fontTools.pens.transformPen import TransformPen
 from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
 
-# Codepoint -> nombre del glifo en devicons (npm devicons 2.4.0, dist/devicons.ttf).
-# U+E00B..E09F está libre en Nerd Fonts 3.5.1 (hueco tras Pomicons, que no crece).
-# Claude, OpenAI y MCP ya existen en Nerd Fonts: nf-cod-claude U+EC82,
-# nf-cod-openai U+EC81, nf-cod-mcp U+EC47.
-GLYPH_MAP = {
-    0xE00B: "claude-code",          # robot de Claude Code
-    0xE00C: "anthropic-icon",
-    0xE00D: "google-gemini-icon",
-    0xE00E: "ollama-icon",
-    0xE00F: "cursor-icon",
-    0xE010: "microsoft-copilot",
-    0xE011: "google-antigravity-icon",
-    0xE012: "kiro-icon",
-    # Modelos y proveedores
-    0xE013: "aws-bedrock-icon",
-    0xE014: "deepseek",
-    0xE015: "mistral-ai-icon",
-    0xE016: "meta-icon",            # Llama
-    0xE017: "qwen-icon",
-    0xE018: "google-gemma-icon",
-    0xE019: "hugging-face-icon",
-    0xE01A: "grok-icon",
-    # Plataformas y ejecución local
-    0xE01B: "openrouter-icon",
-    0xE01C: "google-vertex-ai-icon",
-    0xE01D: "google-ai-studio-icon",
-    0xE01E: "microsoft-azure-ai",   # Azure AI Foundry
-    0xE01F: "lm-studio-icon",
-    0xE020: "groq",
-    # Agentes y editores de código
-    0xE021: "codex-icon",
-    0xE022: "windsurf-icon",
-    0xE023: "cline",
-    0xE024: "zed",
-    0xE025: "warp",
-    0xE026: "devin-icon",
-    0xE027: "lovable-icon",
-    0xE028: "google-notebooklm-icon",
-    # Frameworks
-    0xE029: "langchain",
-    0xE02A: "llamaindex-icon",
-    0xE02B: "crewai-icon",
-    0xE02C: "dify-icon",
-}
+from icons import DEVICONS, GLYPH_MAP, NERD_FONTS, RANGE
 
 GLYPH_PREFIX = "ai-"
 FAMILY_SUFFIX = " AI"
 PS_SUFFIX = "AI"
 FILE_SUFFIX = "-AI"
-VERSION_NOTE = "; AI icons (devicons 2.4.0)"
+VERSION_NOTE = f"; AI icons (devicons {DEVICONS})"
 # Tablas que dependen de numGlyphs y quedarían inválidas al agregar glifos
 DROP_TABLES = ("hdmx", "LTSH", "VDMX")
 
@@ -159,9 +117,10 @@ def rename(font):
 def patch_font(path, dev, out_dir):
     font = TTFont(path)
     cmap = font.getBestCmap()
-    taken = [f"U+{cp:04X}" for cp in GLYPH_MAP if cp in cmap]
+    taken = [f"U+{cp:04X}" for cp in range(RANGE[0], RANGE[1] + 1) if cp in cmap]
     if taken:
-        raise ValueError(f"codepoints ya ocupados ({', '.join(taken)}); ¿fuente ya parcheada o Nerd Fonts los usa?")
+        raise ValueError(f"el rango U+{RANGE[0]:04X}–{RANGE[1]:04X} ya tiene glifos ({', '.join(taken[:5])}"
+                         f"{'...' if len(taken) > 5 else ''}); ¿fuente ya parcheada o Nerd Fonts lo ocupó?")
 
     kind = variant(font)
     glyf = font["glyf"]
@@ -197,8 +156,8 @@ def patch_font(path, dev, out_dir):
 
 def main():
     ap = argparse.ArgumentParser(description="Agrega iconos de IA de devicons a CaskaydiaCove Nerd Font.")
-    ap.add_argument("src", help="carpeta con los .ttf originales de CaskaydiaCove Nerd Font 3.5.1")
-    ap.add_argument("--devicons", required=True, help="ruta a devicons.ttf (npm devicons 2.4.0, dist/devicons.ttf)")
+    ap.add_argument("src", help=f"carpeta con los .ttf originales de CaskaydiaCove Nerd Font {NERD_FONTS}")
+    ap.add_argument("--devicons", required=True, help=f"ruta a devicons.ttf (npm devicons {DEVICONS}, dist/devicons.ttf)")
     ap.add_argument("-o", "--out", default="Patched", help="carpeta de salida (default: Patched)")
     args = ap.parse_args()
 

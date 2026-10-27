@@ -1,0 +1,100 @@
+# Cada semana revisa si hay versiones nuevas de Nerd Fonts o devicons. Si las hay,
+# actualiza icons.toml y el README, construye y verifica, y abre un PR. Si la build
+# falla (p. ej. devicons renombró un icono o Nerd Fonts ocupó el rango), el PR se abre
+# como borrador para revisarlo.
+#
+# Requiere en Settings > Actions > General: "Allow GitHub Actions to create and approve
+# pull requests". Los PR que abre GITHUB_TOKEN no disparan build.yml; la build de este
+# workflow es la que vale (enlace en el PR).
+name: Upstream
+
+on:
+  schedule:
+    - cron: "0 14 * * 1"   # lunes 08:00 en Ciudad de México
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Versiones nuevas
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          nf=$(gh api repos/ryanoasis/nerd-fonts/releases/latest -q .tag_name | sed 's/^v//')
+          dev=$(curl -fsSL https://registry.npmjs.org/devicons/latest | jq -r .version)
+          read -r cur_nf cur_dev < <(python3 -c 'import icons; print(icons.NERD_FONTS, icons.DEVICONS)')
+          echo "Nerd Fonts: $cur_nf -> $nf | devicons: $cur_dev -> $dev"
+          branch="upstream/nf-$nf-devicons-$dev"
+          if [ "$nf" = "$cur_nf" ] && [ "$dev" = "$cur_dev" ]; then
+            echo "Al día"; echo "changed=false" >> "$GITHUB_OUTPUT"
+          elif git ls-remote --exit-code --heads origin "$branch" > /dev/null; then
+            echo "Ya existe la rama $branch"; echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            { echo "changed=true"; echo "nf=$nf"; echo "dev=$dev"; echo "cur_nf=$cur_nf"
+              echo "cur_dev=$cur_dev"; echo "branch=$branch"; } >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Actualizar icons.toml y README
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          python3 icons.py bump --nerd-fonts "${{ steps.check.outputs.nf }}" --devicons "${{ steps.check.outputs.dev }}"
+          python3 icons.py readme
+
+      - uses: ./.github/actions/build
+        id: build
+        if: steps.check.outputs.changed == 'true'
+        continue-on-error: true
+
+      - uses: actions/upload-artifact@v7
+        if: steps.check.outputs.changed == 'true' && steps.build.outcome == 'success'
+        with:
+          name: fonts-nf${{ steps.check.outputs.nf }}-devicons${{ steps.check.outputs.dev }}
+          path: |
+            Patched/*.ttf
+            Symbols/*.ttf
+          retention-days: 30
+
+      - name: Abrir PR
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ steps.check.outputs.branch }}
+          NF: ${{ steps.check.outputs.nf }}
+          DEV: ${{ steps.check.outputs.dev }}
+          CUR_NF: ${{ steps.check.outputs.cur_nf }}
+          CUR_DEV: ${{ steps.check.outputs.cur_dev }}
+          OUTCOME: ${{ steps.build.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$BRANCH"
+          git add icons.toml README.md
+          git commit -m "Upstream: Nerd Fonts $NF, devicons $DEV"
+          git push origin "$BRANCH"
+
+          if [ "$OUTCOME" = success ]; then
+            result="✅ The fonts build and pass \`verify.py\`, \`verify_symbols.py\` and OTS. They are attached to the [workflow run]($RUN_URL)."
+            draft=""
+          else
+            result="❌ The build or the checks failed: see the [workflow run]($RUN_URL). Usual causes: devicons renamed or removed an icon, Nerd Fonts now uses \`U+E00B–E09F\`, or a color variant's Nerd Fonts icon moved."
+            draft="--draft"
+          fi
+          gh pr create $draft --base main --head "$BRANCH" \
+            --title "Upstream: Nerd Fonts $NF, devicons $DEV" \
+            --body "| | Current | New |
+          |---|---|---|
+          | Nerd Fonts | $CUR_NF | $NF |
+          | devicons | $CUR_DEV | $DEV |
+
+          $result
+
+          Before merging, check the icons in a terminal, then tag a release (\`git tag vX.Y && git push --tags\`)."

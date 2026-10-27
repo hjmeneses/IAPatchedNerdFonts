@@ -1,0 +1,72 @@
+name: Build fonts
+description: >-
+  Descarga Nerd Fonts y devicons en las versiones de icons.toml, construye las fuentes
+  parcheadas y AI Symbols, y las verifica (verify.py, verify_symbols.py y OTS).
+
+outputs:
+  nerd-fonts:
+    description: Versión de Nerd Fonts usada
+    value: ${{ steps.versions.outputs.nerd-fonts }}
+  devicons:
+    description: Versión de devicons usada
+    value: ${{ steps.versions.outputs.devicons }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v7
+      with:
+        python-version: "3.12"
+        cache: pip
+        cache-dependency-path: requirements.txt
+
+    - name: Dependencias
+      shell: bash
+      run: pip install -r requirements.txt
+
+    - name: Validar icons.toml y README
+      id: versions
+      shell: bash
+      run: |
+        python icons.py check
+        python icons.py readme --check
+        python -c 'import icons; print(f"nerd-fonts={icons.NERD_FONTS}\ndevicons={icons.DEVICONS}")' >> "$GITHUB_OUTPUT"
+
+    - uses: actions/cache@v6
+      id: cache
+      with:
+        path: upstream
+        key: upstream-nf${{ steps.versions.outputs.nerd-fonts }}-dev${{ steps.versions.outputs.devicons }}
+
+    - name: Descargar upstream
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        NF: ${{ steps.versions.outputs.nerd-fonts }}
+        DEV: ${{ steps.versions.outputs.devicons }}
+      run: |
+        mkdir -p upstream/nf upstream/devicons
+        curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/download/v$NF/CascadiaCode.tar.xz" | tar -xJ -C upstream/nf
+        curl -fsSL "https://registry.npmjs.org/devicons/-/devicons-$DEV.tgz" | tar -xz -C upstream/devicons
+        ls upstream/nf/*.ttf | wc -l
+
+    - name: Fuentes parcheadas
+      shell: bash
+      run: |
+        python patch_all.py upstream/nf --devicons upstream/devicons/package/dist/devicons.ttf -o Patched
+        python verify.py upstream/nf Patched
+
+    - name: AI Symbols
+      shell: bash
+      run: |
+        python build_symbols.py --devicons-pkg upstream/devicons/package \
+          --reference upstream/nf/CaskaydiaCoveNerdFont-Regular.ttf -o Symbols
+        python verify_symbols.py Symbols
+
+    - name: OpenType Sanitizer
+      shell: bash
+      run: |
+        for f in Patched/*.ttf Symbols/*.ttf; do
+          python -m ots "$f" > /dev/null || { echo "OTS rechaza $f"; exit 1; }
+        done
+        echo "OTS: $(ls Patched/*.ttf Symbols/*.ttf | wc -l) fuentes OK"

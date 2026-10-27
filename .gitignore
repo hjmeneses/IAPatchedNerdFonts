@@ -4,5 +4,6 @@
 *.zip
 Patched/
 Symbols/
+upstream/
 __pycache__/
 .venv/

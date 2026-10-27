@@ -8,6 +8,9 @@ Verifica las fuentes generadas por build_symbols.py.
   índices de paleta válidos
 - glyphOrder sin duplicados; familia y post.isFixedPitch correctos
 
+UPM, métricas verticales y celda se leen de la propia fuente (la celda, del avance de
+"space"). Solo necesita fontTools.
+
 Uso:
     python verify_symbols.py <carpeta_symbols>
 """
@@ -16,7 +19,7 @@ import sys
 
 from fontTools.ttLib import TTFont
 
-from build_symbols import ALL_ICONS, ASCENT, CELL, COLOR_ICONS, COLOR_VARIANTS, DESCENT, FAMILIES, UPM
+from icons import ALL_ICONS, COLOR_ICONS, COLOR_VARIANTS, SYMBOLS_FAMILIES as FAMILIES
 from patch_all import GLYPH_PREFIX
 
 TOLERANCE = 2  # unidades de redondeo
@@ -31,9 +34,10 @@ def bounds(glyf, name):
 def check(path, kind):
     errors = []
     font = TTFont(path)
-    glyf, hmtx = font["glyf"], font["hmtx"]
-    box = CELL if kind == "mono" else UPM
-    center_y = (ASCENT + DESCENT) / 2
+    glyf, hmtx, os2 = font["glyf"], font["hmtx"], font["OS/2"]
+    upm, cell = font["head"].unitsPerEm, hmtx["space"][0]
+    box = cell if kind == "mono" else upm
+    center_y = (os2.sTypoAscender + os2.sTypoDescender) / 2
 
     order = font.getGlyphOrder()
     if len(order) != len(set(order)):
@@ -50,14 +54,14 @@ def check(path, kind):
                     errors.append(f"cmap ({table.platformID},{table.platEncID},f{table.format}) sin U+{cp:04X}")
 
     widths = {hmtx[n][0] for n in order if n != ".notdef"}
-    if widths != {CELL}:
+    if widths != {cell}:
         errors.append(f"avances distintos de la celda: {sorted(widths)}")
 
     for cp, src_name in ALL_ICONS.items():
         x0, y0, x1, y1 = bounds(glyf, GLYPH_PREFIX + src_name)
         if x1 - x0 > box + TOLERANCE or y1 - y0 > box + TOLERANCE:
             errors.append(f"U+{cp:04X} {x1 - x0}x{y1 - y0} excede la caja {box}")
-        if kind == "mono" and (x0 < -TOLERANCE or x1 > CELL + TOLERANCE):
+        if kind == "mono" and (x0 < -TOLERANCE or x1 > cell + TOLERANCE):
             errors.append(f"U+{cp:04X} se sale de la celda ({x0}..{x1})")
         if y0 < center_y - box / 2 - TOLERANCE or y1 > center_y + box / 2 + TOLERANCE:
             errors.append(f"U+{cp:04X} fuera de la caja vertical ({y0}..{y1})")

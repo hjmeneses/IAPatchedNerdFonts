@@ -6,6 +6,7 @@ Verifica las fuentes generadas por patch_all.py comparándolas con las originale
 - NF: avance = 1 celda; Propo: avance = ancho del icono
 - Iconos centrados verticalmente y dentro de la caja de referencia de Nerd Fonts
 - glyphOrder sin duplicados; glifos originales intactos; nombres con " AI"
+- La fuente original tiene los iconos de Nerd Fonts de los [[variant]] de icons.toml
 
 Uso:
     python verify.py <carpeta_originales> <carpeta_patched>
@@ -16,7 +17,8 @@ import sys
 
 from fontTools.ttLib import TTFont
 
-from patch_all import FAMILY_SUFFIX, FILE_SUFFIX, GLYPH_MAP, GLYPH_PREFIX, variant
+from icons import GLYPH_MAP, VARIANTS
+from patch_all import FAMILY_SUFFIX, FILE_SUFFIX, GLYPH_PREFIX, variant
 
 CENTER_TOLERANCE = 2  # unidades de redondeo
 
@@ -67,6 +69,11 @@ def check(src_path, out_path):
         widths = {hmtx[n][0] for n in out.getBestCmap().values() if hmtx[n][0] > 0}
         if widths != {cell}:
             errors.append(f"Mono con anchos distintos: {sorted(widths)}")
+
+    src_cmap = src.getBestCmap()
+    for e in VARIANTS:
+        if e["nf_cp"] not in src_cmap:
+            errors.append(f"Nerd Fonts ya no tiene U+{e['nf_cp']:04X} {e['nf_name']} (variante U+{e['cp']:04X})")
 
     src_hmtx = src["hmtx"].metrics
     changed = [n for n in src.getGlyphOrder() if hmtx[n] != src_hmtx[n]]
