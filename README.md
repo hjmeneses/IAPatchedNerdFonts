@@ -97,7 +97,7 @@ To check the glyphs in your terminal:
 
 <!-- /generated:check -->
 
-In an Oh My Posh theme, use the escape sequence, e.g. `""` for the Claude Code robot.
+In an Oh My Posh theme, use the escape sequence, e.g. `"\ue00b"` for the Claude Code robot.
 
 ## AI Symbols: color icons as a fallback font
 
