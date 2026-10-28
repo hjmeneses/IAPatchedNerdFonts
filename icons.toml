@@ -227,6 +227,8 @@ color = true
 # OpenAI y GitHub Copilot no están: en devicons también son negros.
 #   nf_cp, nf_name  icono equivalente en Nerd Fonts
 #   note            texto opcional para el README
+#   recolor         opcional: { "#viejo" = "#nuevo" } aplicado al SVG antes de sacar las
+#                   capas; permite repetir name con otros colores (p. ej. AWS para fondo oscuro)
 
 [[variant]]
 cp = "E060"
@@ -276,4 +278,13 @@ name = "aws"
 label = "AWS"
 nf_cp = "E7AD"
 nf_name = "nf-dev-aws"
-note = "the dark \"aws\" lettering is hard to see on dark backgrounds"
+note = "dark lettering, for light backgrounds"
+
+[[variant]]
+cp = "E067"
+name = "aws"
+label = "AWS"
+nf_cp = "E7AD"
+nf_name = "nf-dev-aws"
+note = "white lettering, for dark backgrounds"
+recolor = { "#252F3E" = "#FFFFFF" }

@@ -19,7 +19,7 @@ import sys
 
 from fontTools.ttLib import TTFont
 
-from icons import ALL_ICONS, COLOR_ICONS, COLOR_VARIANTS, SYMBOLS_FAMILIES as FAMILIES
+from icons import ALL_ICONS, COLOR_ICONS, COLOR_VARIANTS, GLYPH_NAMES, SYMBOLS_FAMILIES as FAMILIES
 from patch_all import GLYPH_PREFIX
 
 TOLERANCE = 2  # unidades de redondeo
@@ -49,16 +49,16 @@ def check(path, kind):
 
     for table in font["cmap"].tables:
         if table.isUnicode():
-            for cp, src_name in ALL_ICONS.items():
-                if table.cmap.get(cp) != GLYPH_PREFIX + src_name:
+            for cp in ALL_ICONS:
+                if table.cmap.get(cp) != GLYPH_PREFIX + GLYPH_NAMES[cp]:
                     errors.append(f"cmap ({table.platformID},{table.platEncID},f{table.format}) sin U+{cp:04X}")
 
     widths = {hmtx[n][0] for n in order if n != ".notdef"}
     if widths != {cell}:
         errors.append(f"avances distintos de la celda: {sorted(widths)}")
 
-    for cp, src_name in ALL_ICONS.items():
-        x0, y0, x1, y1 = bounds(glyf, GLYPH_PREFIX + src_name)
+    for cp in ALL_ICONS:
+        x0, y0, x1, y1 = bounds(glyf, GLYPH_PREFIX + GLYPH_NAMES[cp])
         if x1 - x0 > box + TOLERANCE or y1 - y0 > box + TOLERANCE:
             errors.append(f"U+{cp:04X} {x1 - x0}x{y1 - y0} excede la caja {box}")
         if kind == "mono" and (x0 < -TOLERANCE or x1 > cell + TOLERANCE):
@@ -68,7 +68,8 @@ def check(path, kind):
 
     colr = font["COLR"]
     palette = font["CPAL"].palettes[0]
-    color_bases = {GLYPH_PREFIX + n for n in COLOR_ICONS | set(COLOR_VARIANTS.values())}
+    color_bases = {GLYPH_PREFIX + GLYPH_NAMES[cp] for cp, n in ALL_ICONS.items()
+                   if n in COLOR_ICONS or cp in COLOR_VARIANTS}
     if set(colr.ColorLayers) != color_bases:
         errors.append(f"COLR para {sorted(colr.ColorLayers)}, se esperaba {sorted(color_bases)}")
     for base, layers in colr.ColorLayers.items():

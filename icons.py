@@ -2,7 +2,8 @@
 Carga y valida icons.toml. Los scripts importan de aquí GLYPH_MAP, COLOR_ICONS,
 COLOR_VARIANTS y las versiones de upstream. Solo usa la biblioteca estándar (Python 3.11+).
 
-Validación: codepoints y nombres sin repetir, dentro de [range], campos obligatorios.
+Validación: codepoints y nombres sin repetir (un mismo glifo puede repetirse con otro
+recolor), dentro de [range], campos obligatorios.
 
 Uso:
     python icons.py check                 valida y muestra el siguiente codepoint libre
@@ -55,11 +56,17 @@ def load(path=TOML_PATH):
                 errors.append(f"{where}: U+{e['cp']:04X} fuera del rango U+{start:04X}–{end:04X}")
             if e["cp"] in seen_cp:
                 errors.append(f"{where}: U+{e['cp']:04X} repetido (también en {seen_cp[e['cp']]})")
-            if e["name"] in seen_name:
-                errors.append(f"{where}: glifo repetido (también en {seen_name[e['name']]})")
+            recolor = e.get("recolor", {})
+            if not isinstance(recolor, dict) or not all(
+                    re.fullmatch(r"#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?", c) for kv in recolor.items() for c in kv):
+                errors.append(f"{where}: recolor debe ser una tabla {{ \"#rrggbb\" = \"#rrggbb\" }}")
+                recolor = {}
+            key = (e["name"], tuple(sorted(recolor.items())))
+            if key in seen_name:
+                errors.append(f"{where}: glifo repetido (también en {seen_name[key]})")
             if not isinstance(e.get("color", False), bool):
                 errors.append(f"{where}: color debe ser true o false")
-            seen_cp[e["cp"]], seen_name[e["name"]] = where, where
+            seen_cp[e["cp"]], seen_name[key] = where, where
 
     if errors:
         raise ValueError("icons.toml no es válido:\n  " + "\n  ".join(errors))
@@ -77,6 +84,10 @@ COLOR_ICONS = {e["name"] for e in ICONS if e.get("color")}
 # Versiones a color de iconos de Nerd Fonts; solo en AI Symbols, siempre a color
 COLOR_VARIANTS = {e["cp"]: e["name"] for e in VARIANTS}
 ALL_ICONS = {**GLYPH_MAP, **COLOR_VARIANTS}
+# Colores del SVG que se sustituyen antes de renderizarlo (p. ej. letras de AWS en blanco)
+RECOLOR = {e["cp"]: e["recolor"] for e in ICONS + VARIANTS if e.get("recolor")}
+# Nombre del glifo en AI Symbols; los recoloreados llevan el codepoint para no chocar
+GLYPH_NAMES = {cp: f"{name}.u{cp:04X}" if cp in RECOLOR else name for cp, name in ALL_ICONS.items()}
 
 # Familias de AI Symbols (build_symbols.py y verify_symbols.py)
 SYMBOLS_FAMILIES = {"nf": "AI Symbols", "mono": "AI Symbols Mono"}
