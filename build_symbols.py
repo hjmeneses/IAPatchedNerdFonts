@@ -12,7 +12,8 @@ Windows Terminal: "font": {"face": "CaskaydiaCove Nerd Font, AI Symbols"}.
   igual que en la fuente parcheada y toma el color del tema
 - COLOR_VARIANTS: versiones a color de iconos que Nerd Fonts ya tiene en monocromo
   (nf-cod-claude, nf-dev-pytorch...), en su propio bloque y solo en AI Symbols
-- COLR v0 + CPAL para COLOR_ICONS y COLOR_VARIANTS, con los colores del sprite SVG de devicons:
+- COLR v0 + CPAL para COLOR_ICONS y COLOR_VARIANTS, con los colores del sprite SVG de devicons
+  (tras aplicar `recolor` de icons.toml):
   * un solo color  -> una capa con el contorno completo
   * degradados / mallas / desenfoques -> el contorno troceado en GRID x GRID teselas,
     cada una con el color medio del SVG renderizado en esa zona (Windows Terminal
@@ -39,7 +40,8 @@ from fontTools.pens.ttGlyphPen import TTGlyphPen
 from fontTools.ttLib import TTFont
 from PIL import Image
 
-from icons import ALL_ICONS, COLOR_ICONS, COLOR_VARIANTS, DEVICONS, SYMBOLS_FAMILIES as FAMILIES
+from icons import (ALL_ICONS, COLOR_ICONS, COLOR_VARIANTS, DEVICONS, GLYPH_NAMES, RECOLOR,
+                   SYMBOLS_FAMILIES as FAMILIES)
 from patch_all import GLYPH_PREFIX, icon_transform
 
 GRID = 32            # teselas por lado
@@ -61,13 +63,18 @@ def reference_metrics(path):
     return metrics
 
 
-def sprite_svg(sprite, name):
-    """SVG independiente de un <symbol> del sprite de devicons."""
+def sprite_svg(sprite, name, recolor=None):
+    """SVG independiente de un <symbol> del sprite de devicons, con `recolor` aplicado."""
     m = re.search(r'<symbol([^>]*?)\bid="%s"([^>]*)>(.*?)</symbol>' % re.escape(name), sprite, re.S)
     if not m:
         raise KeyError(f"{name} no está en sprite-symbol.svg")
     view_box = re.search(r'viewBox="([^"]+)"', m.group(1) + m.group(2)).group(1)
-    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box}">{m.group(3)}</svg>', view_box
+    body = m.group(3)
+    for old, new in (recolor or {}).items():
+        body, n = re.subn(re.escape(old) + r'(?=["\s;])', new, body, flags=re.I)
+        if not n:
+            raise ValueError(f"{name}: recolor {old} no aparece en el SVG")
+    return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{view_box}">{body}</svg>', view_box
 
 
 def render(svg):
@@ -100,13 +107,13 @@ def to_glyph(path, matrix):
     return pen.glyph()
 
 
-def color_layers(dev, name, sprite):
+def color_layers(dev, name, sprite, recolor=None):
     """[(pathops.Path en unidades de devicons, (r, g, b))] del icono a color."""
     dev_upm = dev["head"].unitsPerEm
     outline = pathops.Path()
     dev.getGlyphSet()[name].draw(outline.getPen())
 
-    svg, view_box = sprite_svg(sprite, name)
+    svg, view_box = sprite_svg(sprite, name, recolor)
     if [float(v) for v in view_box.split()][2:] != [600.0, 600.0]:
         # devicons dibuja cada SVG de 600x600 sobre su em de 1000 (y invertida)
         raise ValueError(f"{name}: viewBox inesperado {view_box}")
@@ -167,7 +174,7 @@ def build(dev, sprite, kind, metrics, out_dir):
     color_glyphs, palette, palette_index = {}, [], {}
 
     for cp, src_name in sorted(ALL_ICONS.items()):
-        name = GLYPH_PREFIX + src_name
+        name = GLYPH_PREFIX + GLYPH_NAMES[cp]
         matrix, _ = icon_transform(dev, src_name, upm, center_y, cell, kind)
         pen = TTGlyphPen(None)
         gs[src_name].draw(TransformPen(pen, matrix))
@@ -177,7 +184,7 @@ def build(dev, sprite, kind, metrics, out_dir):
         if src_name not in COLOR_ICONS and cp not in COLOR_VARIANTS:
             continue
         layers = []
-        for k, (path, rgb) in enumerate(color_layers(dev, src_name, sprite)):
+        for k, (path, rgb) in enumerate(color_layers(dev, src_name, sprite, RECOLOR.get(cp))):
             layer = f"{name}.c{k:03d}"
             glyphs[layer] = to_glyph(path, matrix)
             if rgb not in palette_index:

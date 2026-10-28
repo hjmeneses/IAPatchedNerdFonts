@@ -126,7 +126,8 @@ AI Symbols also has **color versions** of some icons that Nerd Fonts ships in mo
 | `U+E063` | `U+E88E` `nf-dev-replit` | Replit |
 | `U+E064` | `U+E754` `nf-dev-azure` | Azure |
 | `U+E065` | `U+E80F` `nf-dev-jupyter` | Jupyter |
-| `U+E066` | `U+E7AD` `nf-dev-aws` | AWS (the dark "aws" lettering is hard to see on dark backgrounds) |
+| `U+E066` | `U+E7AD` `nf-dev-aws` | AWS (dark lettering, for light backgrounds) |
+| `U+E067` | `U+E7AD` `nf-dev-aws` | AWS (white lettering, for dark backgrounds) |
 
 <!-- /generated:variants -->
 
@@ -205,6 +206,8 @@ Icons and upstream versions live in [`icons.toml`](icons.toml), the only place t
 2. Add an `[[icon]]` with the next free codepoint, which `python icons.py check` prints. Add `color = true` if the brand colors of the SVG should be used in AI Symbols.
 3. Run `python icons.py readme` to update the tables, and open a pull request.
 
+If a logo is hard to see on dark backgrounds, add a `[[variant]]` with `recolor = { "#old" = "#new" }`. The colors are replaced in the SVG before the color layers are built, and the same devicons glyph can be reused with different colors (this is how `U+E067`, AWS with white lettering, is made).
+
 `icons.py` rejects repeated codepoints or glyph names, codepoints outside `U+E00B–E09F`, and missing fields.
 
 ## CI
@@ -236,7 +239,11 @@ python verify.py <folder-with-ttf> Patched
 
 python build_symbols.py --devicons-pkg <devicons\package> --reference <folder-with-ttf>\CaskaydiaCoveNerdFont-Regular.ttf -o Symbols
 python verify_symbols.py Symbols
+
+python preview.py --nerd-font <folder-with-ttf>\CaskaydiaCoveNerdFont-Regular.ttf --patched Patched\CaskaydiaCoveNerdFont-Regular-AI.ttf --symbols Symbols\AISymbols-Regular.ttf
 ```
+
+`preview.py` regenerates `preview.png`, the image at the top of this README, from `icons.toml` and the built fonts.
 
 AI Symbols needs the whole devicons package (`dist/devicons.ttf` and `dist/sprite-symbol.svg`).
 
@@ -261,4 +268,4 @@ AI Symbols needs the whole devicons package (`dist/devicons.ttf` and `dist/sprit
 - **Fonts**: SIL Open Font License 1.1 — see [`OFL.txt`](OFL.txt). This applies to Cascadia Code (© Microsoft, Reserved Font Name *Cascadia Code*), to the Nerd Fonts patches, and to these modified versions, which must remain under the OFL.
 - **Icons**: from [devicons](https://github.com/vorillaz/devicons) (MIT). The logos are trademarks of their respective owners and are included only to identify those tools.
 - **AI Symbols**: built only from devicons glyphs and SVGs (MIT).
-- **Scripts** (`icons.py`, `patch_all.py`, `verify.py`, `build_symbols.py`, `verify_symbols.py`): GNU GPL v3 — see [`LICENSE`](LICENSE).
+- **Scripts** (`icons.py`, `patch_all.py`, `verify.py`, `build_symbols.py`, `verify_symbols.py`, `preview.py`): GNU GPL v3 — see [`LICENSE`](LICENSE).
