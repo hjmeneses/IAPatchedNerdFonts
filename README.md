@@ -180,6 +180,12 @@ Combine checks with `or`, e.g. for Antigravity: `{{ if or (glob \".agents\") (gl
 
 Repeat the segment with `\ue012` for Kiro, `\ue011` for Antigravity, or `\uec1e` (`nf-cod-copilot`) for GitHub Copilot. An empty template hides the segment.
 
+A complete theme is in [`examples/friday.omp.json`](examples/friday.omp.json). On the right it shows segments for Claude, Kiro, Antigravity, Grok, Copilot and Codex, and the active AWS profile with `\ue067`, the AWS logo with white lettering. `U+E067` is only in AI Symbols: with the patched `\u2026 AI` fonts, change it to `\ue7ad` (`nf-dev-aws`). To try it:
+
+```powershell
+oh-my-posh init pwsh --config examples/friday.omp.json | Invoke-Expression
+```
+
 ### Starship
 
 Starship detects folders natively with a `custom` module:
