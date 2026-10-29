@@ -125,9 +125,10 @@ AI Symbols also has **color versions** of some icons that Nerd Fonts ships in mo
 | `U+E062` | `U+E8BC` `nf-dev-tensorflow` | TensorFlow |
 | `U+E063` | `U+E88E` `nf-dev-replit` | Replit |
 | `U+E064` | `U+E754` `nf-dev-azure` | Azure |
-| `U+E065` | `U+E80F` `nf-dev-jupyter` | Jupyter |
+| `U+E065` | `U+E80F` `nf-dev-jupyter` | Jupyter (dark lettering, for light backgrounds) |
 | `U+E066` | `U+E7AD` `nf-dev-aws` | AWS (dark lettering, for light backgrounds) |
 | `U+E067` | `U+E7AD` `nf-dev-aws` | AWS (white lettering, for dark backgrounds) |
+| `U+E068` | `U+E80F` `nf-dev-jupyter` | Jupyter (white lettering and moons, for dark backgrounds) |
 
 <!-- /generated:variants -->
 
@@ -212,15 +213,25 @@ Icons and upstream versions live in [`icons.toml`](icons.toml), the only place t
 2. Add an `[[icon]]` with the next free codepoint, which `python icons.py check` prints. Add `color = true` if the brand colors of the SVG should be used in AI Symbols.
 3. Run `python icons.py readme` to update the tables, and open a pull request.
 
-If a logo is hard to see on dark backgrounds, add a `[[variant]]` with `recolor = { "#old" = "#new" }`. The colors are replaced in the SVG before the color layers are built, and the same devicons glyph can be reused with different colors (this is how `U+E067`, AWS with white lettering, is made).
+If a logo is hard to see on dark backgrounds, add a `[[variant]]` with `recolor = { "#old" = "#new" }`. The colors are replaced in the SVG before the color layers are built, and the same devicons glyph can be reused with different colors (this is how `U+E067`, AWS with white lettering, and `U+E068`, Jupyter with white lettering and moons, are made).
 
-`icons.py` rejects repeated codepoints or glyph names, codepoints outside `U+E00B–E09F`, and missing fields.
+A recolor must reproduce an official version of the logo, not a new one. Add `brand_colors`, the palette of that version, and `brand_ref`, where it comes from:
+
+```toml
+recolor = { "#4E4E4E" = "#FFFFFF", "#767677" = "#FFFFFF", "#9E9E9E" = "#FFFFFF", "#616262" = "#FFFFFF" }
+brand_colors = ["#FFFFFF", "#F37726"]
+brand_ref = "https://raw.githubusercontent.com/jupyter/design/<commit>/logos/.../rectanglelogo-whitetext-orangebody-whitemoons.svg"
+```
+
+`verify_brand.py` checks that the recolored SVG uses exactly `brand_colors`, so the brand color is never changed and a half recolor (white text, grey moons) fails. If `brand_ref` is an `.svg` pinned to a commit, it also downloads it and compares the palettes. If the brand does not publish an SVG (AWS), `brand_ref` points to its brand guidelines.
+
+`icons.py` rejects repeated codepoints or glyph names, codepoints outside `U+E00B–E09F`, missing fields, and a `recolor` without `brand_colors` and `brand_ref`.
 
 ## CI
 
 | Workflow | When | What it does |
 |----------|------|--------------|
-| [`build.yml`](.github/workflows/build.yml) | Every push and pull request | Validates `icons.toml` and that the README is up to date, builds both font sets, runs `verify.py`, `verify_symbols.py` and OpenType Sanitizer, and attaches the fonts to the run |
+| [`build.yml`](.github/workflows/build.yml) | Every push and pull request | Validates `icons.toml` and that the README is up to date, builds both font sets, runs `verify.py`, `verify_symbols.py`, `verify_brand.py` and OpenType Sanitizer, and attaches the fonts to the run |
 | [`upstream.yml`](.github/workflows/upstream.yml) | Mondays, or by hand | If Nerd Fonts or devicons has a new version, updates `icons.toml`, builds, and opens a pull request. If the build fails, the pull request is a draft |
 | [`release.yml`](.github/workflows/release.yml) | Pushing a `v*` tag | Builds and creates a draft release with both zips |
 

@@ -1,7 +1,8 @@
 name: Build fonts
 description: >-
   Descarga Nerd Fonts y devicons en las versiones de icons.toml, construye las fuentes
-  parcheadas y AI Symbols, y las verifica (verify.py, verify_symbols.py y OTS).
+  parcheadas y AI Symbols, y las verifica (verify.py, verify_symbols.py, verify_brand.py
+  y OTS).
 
 outputs:
   nerd-fonts:
@@ -62,6 +63,7 @@ runs:
         python build_symbols.py --devicons-pkg upstream/devicons/package \
           --reference upstream/nf/CaskaydiaCoveNerdFont-Regular.ttf -o Symbols
         python verify_symbols.py Symbols
+        python verify_brand.py --devicons-pkg upstream/devicons/package
 
     - name: OpenType Sanitizer
       shell: bash
