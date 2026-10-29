@@ -229,6 +229,12 @@ color = true
 #   note            texto opcional para el README
 #   recolor         opcional: { "#viejo" = "#nuevo" } aplicado al SVG antes de sacar las
 #                   capas; permite repetir name con otros colores (p. ej. AWS para fondo oscuro)
+#   brand_colors    obligatorio con recolor: paleta de la versión oficial del logo que se
+#                   imita. verify_brand.py exige que el SVG recoloreado use exactamente esos
+#                   colores: el color de marca no se toca y no quedan mezclas que la marca
+#                   no publica
+#   brand_ref       obligatorio con recolor: de dónde sale la paleta. Si es un .svg fijado a
+#                   un commit, verify_brand.py lo descarga y lo compara con brand_colors
 
 [[variant]]
 cp = "E060"
@@ -271,6 +277,7 @@ name = "jupyter"
 label = "Jupyter"
 nf_cp = "E80F"
 nf_name = "nf-dev-jupyter"
+note = "dark lettering, for light backgrounds"
 
 [[variant]]
 cp = "E066"
@@ -288,3 +295,17 @@ nf_cp = "E7AD"
 nf_name = "nf-dev-aws"
 note = "white lettering, for dark backgrounds"
 recolor = { "#252F3E" = "#FFFFFF" }
+# AWS no publica el SVG; la versión para fondos oscuros es texto blanco y sonrisa naranja
+brand_colors = ["#FFFFFF", "#FF9900"]
+brand_ref = "https://aws.amazon.com/trademark-guidelines/"
+
+[[variant]]
+cp = "E068"
+name = "jupyter"
+label = "Jupyter"
+nf_cp = "E80F"
+nf_name = "nf-dev-jupyter"
+note = "white lettering and moons, for dark backgrounds"
+recolor = { "#4E4E4E" = "#FFFFFF", "#767677" = "#FFFFFF", "#9E9E9E" = "#FFFFFF", "#616262" = "#FFFFFF" }
+brand_colors = ["#FFFFFF", "#F37726"]
+brand_ref = "https://raw.githubusercontent.com/jupyter/design/969b623cd3b7428822a758952b8a7d6646fff658/logos/Rectangle%20Logo/rectanglelogo-whitetext-orangebody-whitemoons/rectanglelogo-whitetext-orangebody-whitemoons.svg"

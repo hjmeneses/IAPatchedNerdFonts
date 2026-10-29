@@ -3,7 +3,8 @@ Carga y valida icons.toml. Los scripts importan de aquí GLYPH_MAP, COLOR_ICONS,
 COLOR_VARIANTS y las versiones de upstream. Solo usa la biblioteca estándar (Python 3.11+).
 
 Validación: codepoints y nombres sin repetir (un mismo glifo puede repetirse con otro
-recolor), dentro de [range], campos obligatorios.
+recolor), dentro de [range], campos obligatorios, brand_colors y brand_ref en todo recolor.
+verify_brand.py comprueba los colores contra el SVG.
 
 Uso:
     python icons.py check                 valida y muestra el siguiente codepoint libre
@@ -20,6 +21,13 @@ import tomllib
 HERE = os.path.dirname(os.path.abspath(__file__))
 TOML_PATH = os.path.join(HERE, "icons.toml")
 README_PATH = os.path.join(HERE, "README.md")
+HEX = re.compile(r"#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?")
+
+
+def norm_color(c):
+    """#f90 -> #FF9900"""
+    c = c.upper()
+    return "#" + "".join(ch * 2 for ch in c[1:]) if len(c) == 4 else c
 
 
 def _cp(value, where):
@@ -58,9 +66,16 @@ def load(path=TOML_PATH):
                 errors.append(f"{where}: U+{e['cp']:04X} repetido (también en {seen_cp[e['cp']]})")
             recolor = e.get("recolor", {})
             if not isinstance(recolor, dict) or not all(
-                    re.fullmatch(r"#[0-9A-Fa-f]{3}([0-9A-Fa-f]{3})?", c) for kv in recolor.items() for c in kv):
+                    HEX.fullmatch(c) for kv in recolor.items() for c in kv):
                 errors.append(f"{where}: recolor debe ser una tabla {{ \"#rrggbb\" = \"#rrggbb\" }}")
                 recolor = {}
+            brand = e.get("brand_colors", [])
+            if not isinstance(brand, list) or not all(isinstance(c, str) and HEX.fullmatch(c) for c in brand):
+                errors.append(f"{where}: brand_colors debe ser una lista [\"#rrggbb\", ...]")
+            if not isinstance(e.get("brand_ref", ""), str):
+                errors.append(f"{where}: brand_ref debe ser una URL")
+            if recolor and not (brand and e.get("brand_ref")):
+                errors.append(f"{where}: un recolor necesita brand_colors y brand_ref (versión oficial del logo)")
             key = (e["name"], tuple(sorted(recolor.items())))
             if key in seen_name:
                 errors.append(f"{where}: glifo repetido (también en {seen_name[key]})")
@@ -86,6 +101,8 @@ COLOR_VARIANTS = {e["cp"]: e["name"] for e in VARIANTS}
 ALL_ICONS = {**GLYPH_MAP, **COLOR_VARIANTS}
 # Colores del SVG que se sustituyen antes de renderizarlo (p. ej. letras de AWS en blanco)
 RECOLOR = {e["cp"]: e["recolor"] for e in ICONS + VARIANTS if e.get("recolor")}
+# Iconos con paleta oficial declarada (verify_brand.py)
+BRANDED = [e for e in ICONS + VARIANTS if e.get("brand_colors")]
 # Nombre del glifo en AI Symbols; los recoloreados llevan el codepoint para no chocar
 GLYPH_NAMES = {cp: f"{name}.u{cp:04X}" if cp in RECOLOR else name for cp, name in ALL_ICONS.items()}
 
