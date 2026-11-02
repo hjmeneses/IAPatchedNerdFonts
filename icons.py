@@ -15,6 +15,7 @@ Uso:
 import argparse
 import os
 import re
+import subprocess
 import sys
 import tomllib
 
@@ -88,7 +89,21 @@ def load(path=TOML_PATH):
     return upstream, (start, end), icons, variants
 
 
+def _git_version():
+    ref = os.environ.get("GITHUB_REF_NAME", "")
+    if re.fullmatch(r"v\d+\.\d+(\.\d+)?", ref):
+        return ref[1:]
+    out = subprocess.check_output(
+        ["git", "-C", HERE, "describe", "--tags", "--abbrev=0", "--match", "v*"],
+        text=True,
+    ).strip()
+    if not re.fullmatch(r"v\d+\.\d+(\.\d+)?", out):
+        raise ValueError(f"tag de git inválido para versión: {out!r}")
+    return out[1:]
+
+
 UPSTREAM, RANGE, ICONS, VARIANTS = load()
+VERSION = _git_version()
 NERD_FONTS = UPSTREAM["nerd_fonts"]
 DEVICONS = UPSTREAM["devicons"]
 
@@ -189,7 +204,7 @@ def main():
     if args.cmd == "check":
         used = set(ALL_ICONS)
         free = next((cp for cp in range(RANGE[0], RANGE[1] + 1) if cp not in used and cp > max(GLYPH_MAP)), None)
-        print(f"OK: {len(GLYPH_MAP)} iconos, {len(COLOR_ICONS)} a color, {len(COLOR_VARIANTS)} variantes "
+        print(f"OK: v{VERSION} | {len(GLYPH_MAP)} iconos, {len(COLOR_ICONS)} a color, {len(COLOR_VARIANTS)} variantes "
               f"| Nerd Fonts {NERD_FONTS}, devicons {DEVICONS}")
         print(f"Siguiente codepoint libre para [[icon]]: U+{free:04X}" if free else "Rango lleno")
     elif args.cmd == "readme":

@@ -41,7 +41,7 @@ from fontTools.ttLib import TTFont
 from PIL import Image
 
 from icons import (ALL_ICONS, COLOR_ICONS, COLOR_VARIANTS, DEVICONS, GLYPH_NAMES, RECOLOR,
-                   SYMBOLS_FAMILIES as FAMILIES)
+                   SYMBOLS_FAMILIES as FAMILIES, VERSION)
 from patch_all import GLYPH_PREFIX, icon_transform
 
 GRID = 32            # teselas por lado
@@ -49,8 +49,6 @@ RENDER = 640         # px del render del SVG (20 px por tesela)
 OVERLAP = 0.15       # fracción de tesela que se solapa con la vecina (evita rayas)
 SOLID_TOLERANCE = 6  # diferencia máx. por canal (0-255) para tratar el icono como un solo color
 MAX_COLORS = 48      # colores por icono: las teselas de un mismo color se unen en una capa
-
-VERSION = "1.000"
 
 
 def reference_metrics(path):
@@ -194,6 +192,7 @@ def build(dev, sprite, kind, metrics, out_dir):
         color_glyphs[name] = layers
 
     fb = FontBuilder(upm, isTTF=True)
+    fb.font["head"].fontRevision = float(VERSION)
     fb.setupGlyphOrder(list(glyphs))
     fb.setupCharacterMap(cmap)
     fb.setupGlyf(glyphs)

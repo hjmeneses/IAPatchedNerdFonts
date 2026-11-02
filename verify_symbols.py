@@ -6,7 +6,7 @@ Verifica las fuentes generadas por build_symbols.py.
 - Iconos centrados verticalmente y dentro de la caja (celda en Mono, UPM en NF)
 - COLR v0 solo en COLOR_ICONS y COLOR_VARIANTS; capas que existen, dentro del icono base y con
   índices de paleta válidos
-- glyphOrder sin duplicados; familia y post.isFixedPitch correctos
+- glyphOrder sin duplicados; familia, versión y post.isFixedPitch correctos
 
 UPM, métricas verticales y celda se leen de la propia fuente (la celda, del avance de
 "space"). Solo necesita fontTools.
@@ -19,7 +19,8 @@ import sys
 
 from fontTools.ttLib import TTFont
 
-from icons import ALL_ICONS, COLOR_ICONS, COLOR_VARIANTS, GLYPH_NAMES, SYMBOLS_FAMILIES as FAMILIES
+from icons import (ALL_ICONS, COLOR_ICONS, COLOR_VARIANTS, DEVICONS, GLYPH_NAMES,
+                   SYMBOLS_FAMILIES as FAMILIES, VERSION)
 from patch_all import GLYPH_PREFIX
 
 TOLERANCE = 2  # unidades de redondeo
@@ -44,6 +45,11 @@ def check(path, kind):
         errors.append("glyphOrder con duplicados")
     if font["name"].getDebugName(1) != FAMILIES[kind]:
         errors.append(f"familia {font['name'].getDebugName(1)!r} != {FAMILIES[kind]!r}")
+    expected_version = f"Version {VERSION}; devicons {DEVICONS}"
+    if font["name"].getDebugName(5) != expected_version:
+        errors.append(f"version {font['name'].getDebugName(5)!r} != {expected_version!r}")
+    if round(font["head"].fontRevision, 3) != round(float(VERSION), 3):
+        errors.append(f"head.fontRevision {font['head'].fontRevision:.3f} != {float(VERSION):.3f}")
     if font["post"].isFixedPitch != int(kind == "mono"):
         errors.append(f"post.isFixedPitch = {font['post'].isFixedPitch}")
 

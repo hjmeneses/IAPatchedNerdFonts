@@ -9,7 +9,7 @@
 Two ways to get them:
 
 - **Patched fonts** (`CaskaydiaCove NF AI`, `NFM AI`, `NFP AI`): the icons are added to the font, monochrome like every Nerd Fonts icon.
-- **[AI Symbols](#ai-symbols-color-icons-as-a-fallback-font)**: a small icon-only font that you put after any font in your terminal. Brand logos come in color.
+- **[AI Symbols](#ai-symbols-color-icons-as-a-fallback-font)**: a small icon-only fallback font that works with **any** font (CaskaydiaCove, JetBrainsMono, FiraCode, Meslo…). Brand logos come in color.
 
 ![Every icon in the patched font (monochrome) and in AI Symbols (color), plus the color variants next to the official Nerd Fonts icons](preview.png)
 
@@ -147,7 +147,7 @@ Windows Terminal (`settings.json`, per profile or in `profiles.defaults`):
 "font": { "face": "CaskaydiaCove Nerd Font, AI Symbols" }
 ```
 
-Put it after an **unpatched** Nerd Font (or any font). The patched `… AI` fonts already have monochrome glyphs at these codepoints, and the first font in the list wins.
+Put it after an **unpatched** Nerd Font (or any other font, such as `JetBrainsMono Nerd Font`, `FiraCode Nerd Font` or `MesloLGS Nerd Font`). The patched `… AI` fonts already have monochrome glyphs at these codepoints, and the first font in the list wins.
 
 How the color works:
 
