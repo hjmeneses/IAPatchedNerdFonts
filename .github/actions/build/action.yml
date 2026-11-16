@@ -1,7 +1,7 @@
 name: Build fonts
 description: >-
-  Descarga Nerd Fonts y devicons en las versiones de icons.toml, construye las fuentes
-  parcheadas y AI Symbols, y las verifica (verify.py, verify_symbols.py, verify_brand.py
+  Descarga las familias [[font]] de Nerd Fonts y devicons en las versiones de icons.toml,
+  construye las fuentes parcheadas (Patched/<family>/) y AI Symbols, y las verifica (verify.py, verify_symbols.py, verify_brand.py
   y OTS).
 
 outputs:
@@ -32,12 +32,13 @@ runs:
         python icons.py check
         python icons.py readme --check
         python -c 'import icons; print(f"nerd-fonts={icons.NERD_FONTS}\ndevicons={icons.DEVICONS}")' >> "$GITHUB_OUTPUT"
+        echo "fonts=$(python icons.py fonts | cut -d' ' -f1 | paste -sd- -)" >> "$GITHUB_OUTPUT"
 
     - uses: actions/cache@v6
       id: cache
       with:
         path: upstream
-        key: upstream-nf${{ steps.versions.outputs.nerd-fonts }}-dev${{ steps.versions.outputs.devicons }}
+        key: upstream-nf${{ steps.versions.outputs.nerd-fonts }}-dev${{ steps.versions.outputs.devicons }}-${{ steps.versions.outputs.fonts }}
 
     - name: Descargar upstream
       if: steps.cache.outputs.cache-hit != 'true'
@@ -46,29 +47,39 @@ runs:
         NF: ${{ steps.versions.outputs.nerd-fonts }}
         DEV: ${{ steps.versions.outputs.devicons }}
       run: |
-        mkdir -p upstream/nf upstream/devicons
-        curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/download/v$NF/CascadiaCode.tar.xz" | tar -xJ -C upstream/nf
+        mkdir -p upstream/devicons
         curl -fsSL "https://registry.npmjs.org/devicons/-/devicons-$DEV.tgz" | tar -xz -C upstream/devicons
-        ls upstream/nf/*.ttf | wc -l
+        python icons.py fonts | while read -r archive family; do
+          mkdir -p "upstream/nf/$archive"
+          curl -fsSL "https://github.com/ryanoasis/nerd-fonts/releases/download/v$NF/$archive.tar.xz" \
+            | tar -xJ -C "upstream/nf/$archive"
+          echo "$family: $(ls upstream/nf/$archive/*.ttf | wc -l) ttf"
+        done
 
+    # Una carpeta por familia: Patched/<family>/, con el archivo de licencia de la fuente
     - name: Fuentes parcheadas
       shell: bash
       run: |
-        python patch_all.py upstream/nf --devicons upstream/devicons/package/dist/devicons.ttf -o Patched
-        python verify.py upstream/nf Patched
+        python icons.py fonts | while read -r archive family; do
+          echo "::group::$family"
+          python patch_all.py "upstream/nf/$archive" --devicons upstream/devicons/package/dist/devicons.ttf -o "Patched/$family"
+          python verify.py "upstream/nf/$archive" "Patched/$family"
+          find "upstream/nf/$archive" -maxdepth 1 -type f ! -name '*.ttf' ! -name 'README.md' -exec cp {} "Patched/$family/" \;
+          echo "::endgroup::"
+        done
 
     - name: AI Symbols
       shell: bash
       run: |
         python build_symbols.py --devicons-pkg upstream/devicons/package \
-          --reference upstream/nf/CaskaydiaCoveNerdFont-Regular.ttf -o Symbols
+          --reference upstream/nf/CascadiaCode/CaskaydiaCoveNerdFont-Regular.ttf -o Symbols
         python verify_symbols.py Symbols
         python verify_brand.py --devicons-pkg upstream/devicons/package
 
     - name: OpenType Sanitizer
       shell: bash
       run: |
-        for f in Patched/*.ttf Symbols/*.ttf; do
+        for f in Patched/*/*.ttf Symbols/*.ttf; do
           python -m ots "$f" > /dev/null || { echo "OTS rechaza $f"; exit 1; }
         done
-        echo "OTS: $(ls Patched/*.ttf Symbols/*.ttf | wc -l) fuentes OK"
+        echo "OTS: $(ls Patched/*/*.ttf Symbols/*.ttf | wc -l) fuentes OK"

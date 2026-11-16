@@ -1,5 +1,6 @@
 """
-Parchea las fuentes CaskaydiaCove Nerd Font con iconos de IA de devicons que Nerd Fonts
+Parchea fuentes de Nerd Fonts (las familias [[font]] de icons.toml: CaskaydiaCove,
+JetBrainsMono, FiraCode, MesloLG, Hack...) con iconos de IA de devicons que Nerd Fonts
 todavía no incluye. Iconos y versiones de upstream: icons.toml.
 
 - Escala por em de devicons (como font-patcher), no por glifo, para conservar
@@ -9,7 +10,9 @@ todavía no incluye. Iconos y versiones de upstream: icons.toml.
 - Propo: caja de UPM x UPM; avance = ancho del icono
 - Centra verticalmente en (sTypoAscender + sTypoDescender) / 2
 - Inserta en todas las subtablas cmap Unicode (formato 4 y 12)
-- Agrega " AI" a la familia y "AI" al nombre PostScript (familia <= 31 caracteres)
+- Agrega " AI" a la familia y "AI" al nombre PostScript; si el nameID 1 pasa de 31
+  caracteres abrevia el estilo como font-patcher ('ExtraLight' -> 'ExtLt') y, si aún
+  no cabe, la familia ('Nerd Font Mono' -> 'NFM')
 - Se niega a parchear si la fuente ya tiene glifos en el rango de icons.toml
 
 Uso:
@@ -18,6 +21,7 @@ Uso:
 import argparse
 import glob
 import os
+import re
 import sys
 
 from fontTools.pens.boundsPen import ControlBoundsPen
@@ -34,6 +38,14 @@ FILE_SUFFIX = "-AI"
 VERSION_NOTE = f"; AI icons (devicons {DEVICONS})"
 # Tablas que dependen de numGlyphs y quedarían inválidas al agregar glifos
 DROP_TABLES = ("hdmx", "LTSH", "VDMX")
+# Límite del nameID 1 en apps antiguas (GDI)
+MAX_FAMILY = 31
+# Abreviaturas de font-patcher (FontnameTools), las compuestas primero
+STYLE_ABBREVIATIONS = (
+    ("ExtraLight", "ExtLt"), ("ExtraBold", "ExtBd"), ("SemiLight", "SemLt"), ("SemiBold", "SemBd"),
+    ("UltraLight", "UltLt"), ("UltraBold", "UltBd"), ("DemiBold", "DemBd"),
+    ("Light", "Lt"), ("Medium", "Med"), ("Retina", "Ret"), ("Black", "Blk"), ("Heavy", "Hv"), ("Thin", "Th"),
+)
 
 
 def variant(font):
@@ -90,8 +102,25 @@ def build_glyph(dev, src_name, font, kind):
     return pen.glyph(), advance
 
 
+def short_style(style):
+    """Abrevia los pesos como font-patcher de Nerd Fonts: 'ExtraLight' -> 'ExtLt', 'SemiBold' -> 'SemBd'."""
+    for long, short in STYLE_ABBREVIATIONS:
+        style = re.sub(rf"\b{long}\b", short, style)
+    return style
+
+
+def short_family(family):
+    """'FiraCode Nerd Font Mono' -> 'FiraCode NFM', como los nombres cortos de Nerd Fonts."""
+    for long, short in ((" Nerd Font Mono", " NFM"), (" Nerd Font Propo", " NFP"), (" Nerd Font", " NF")):
+        if family.endswith(long):
+            return family[: -len(long)] + short
+    return family
+
+
 def rename(font):
-    """Inserta el sufijo tras la familia: 'CaskaydiaCove NFM SemiLight' -> 'CaskaydiaCove NFM AI SemiLight'."""
+    """Inserta el sufijo tras la familia: 'CaskaydiaCove NFM SemiLight' -> 'CaskaydiaCove NFM AI SemiLight'.
+    Si el nameID 1 pasa de 31 caracteres abrevia el estilo ('FiraCode Nerd Font Mono AI Lt') y, si
+    aún no cabe, la familia ('FiraCode NFM AI SemBd')."""
     names = font["name"]
     bases = {r.toUnicode() for r in names.names if r.nameID == 16}
     if not bases:
@@ -103,7 +132,14 @@ def rename(font):
         if record.nameID in (1, 3, 4, 16):
             for base in bases:
                 if s.startswith(base) and not s.startswith(base + FAMILY_SUFFIX):
-                    record.string = base + FAMILY_SUFFIX + s[len(base):]
+                    new = base + FAMILY_SUFFIX + s[len(base):]
+                    if record.nameID == 1 and len(new) > MAX_FAMILY:
+                        new = base + FAMILY_SUFFIX + short_style(s[len(base):])
+                    if record.nameID == 1 and len(new) > MAX_FAMILY:
+                        new = short_family(base) + FAMILY_SUFFIX + short_style(s[len(base):])
+                        if len(new) > MAX_FAMILY:
+                            raise ValueError(f"nameID 1 de {len(new)} caracteres (> {MAX_FAMILY}): {new!r}")
+                    record.string = new
                     break
         elif record.nameID == 5:
             if not s.endswith(VERSION_NOTE):
@@ -155,8 +191,8 @@ def patch_font(path, dev, out_dir):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Agrega iconos de IA de devicons a CaskaydiaCove Nerd Font.")
-    ap.add_argument("src", help=f"carpeta con los .ttf originales de CaskaydiaCove Nerd Font {NERD_FONTS}")
+    ap = argparse.ArgumentParser(description="Agrega iconos de IA de devicons a una familia de Nerd Fonts.")
+    ap.add_argument("src", help=f"carpeta con los .ttf originales de una familia de Nerd Fonts {NERD_FONTS}")
     ap.add_argument("--devicons", required=True, help=f"ruta a devicons.ttf (npm devicons {DEVICONS}, dist/devicons.ttf)")
     ap.add_argument("-o", "--out", default="Patched", help="carpeta de salida (default: Patched)")
     args = ap.parse_args()

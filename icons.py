@@ -8,6 +8,7 @@ verify_brand.py comprueba los colores contra el SVG.
 
 Uso:
     python icons.py check                 valida y muestra el siguiente codepoint libre
+    python icons.py fonts                 lista los [[font]] (archive family), para CI
     python icons.py readme [--check]      regenera las secciones generadas del README
     python icons.py bump [--nerd-fonts X] [--devicons Y]
                                           cambia las versiones de upstream en icons.toml
@@ -84,9 +85,23 @@ def load(path=TOML_PATH):
                 errors.append(f"{where}: color debe ser true o false")
             seen_cp[e["cp"]], seen_name[key] = where, where
 
+    fonts = data.get("font", [])
+    if not fonts:
+        errors.append("falta al menos un [[font]]")
+    for i, f in enumerate(fonts):
+        missing = [k for k in ("archive", "family", "license") if not isinstance(f.get(k), str) or not f[k]]
+        if missing:
+            errors.append(f"font[{i}] {f.get('archive', '?')}: faltan {', '.join(missing)}")
+        elif not re.fullmatch(r"[A-Za-z0-9]+", f["archive"]):
+            errors.append(f"font[{i}]: archive {f['archive']!r} debe ser el nombre del .tar.xz sin extensión")
+    for key in ("archive", "family"):
+        repeated = {f.get(key) for f in fonts if [g.get(key) for g in fonts].count(f.get(key)) > 1}
+        if repeated:
+            errors.append(f"font: {key} repetido: {', '.join(sorted(map(str, repeated)))}")
+
     if errors:
         raise ValueError("icons.toml no es válido:\n  " + "\n  ".join(errors))
-    return upstream, (start, end), icons, variants
+    return upstream, (start, end), icons, variants, fonts
 
 
 def _git_version():
@@ -102,7 +117,7 @@ def _git_version():
     return out[1:]
 
 
-UPSTREAM, RANGE, ICONS, VARIANTS = load()
+UPSTREAM, RANGE, ICONS, VARIANTS, FONTS = load()
 VERSION = _git_version()
 NERD_FONTS = UPSTREAM["nerd_fonts"]
 DEVICONS = UPSTREAM["devicons"]
@@ -127,9 +142,23 @@ SYMBOLS_FAMILIES = {"nf": "AI Symbols", "mono": "AI Symbols Mono"}
 
 # --- README -------------------------------------------------------------------------
 
+def nf_url(archive):
+    return f"https://github.com/ryanoasis/nerd-fonts/releases/download/v{NERD_FONTS}/{archive}.tar.xz"
+
+
 def _readme_sections():
-    nf_url = f"https://github.com/ryanoasis/nerd-fonts/releases/download/v{NERD_FONTS}/CascadiaCode.tar.xz"
     dev_url = f"https://registry.npmjs.org/devicons/-/devicons-{DEVICONS}.tgz"
+    families = [f"{f['family']} Nerd Font" for f in FONTS]
+    width = max(len(s) for s in families + ["devicons"]) + len(NERD_FONTS) + 2
+    sources = [f"{f'{fam} v{NERD_FONTS}':<{width}}  {nf_url(f['archive'])}" for fam, f in zip(families, FONTS)]
+    sources.append(f"{f'devicons v{DEVICONS}':<{width}}  {dev_url}")
+
+    fonts = ["| Nerd Font | Patched families | Font license | Zip |",
+             "|-----------|------------------|--------------|-----|"]
+    for f in FONTS:
+        fonts.append(f"| [{f['family']} Nerd Font]({nf_url(f['archive'])}) | `{f['family']} … AI` "
+                     f"| {f['license']} | `{f['family']}-NerdFont-AI-<version>.zip` |")
+    names = ", ".join(f["family"] for f in FONTS)
 
     glyphs = ["| Codepoint | Icon | devicons glyph |", "|-----------|------|----------------|"]
     for e in ICONS:
@@ -155,15 +184,15 @@ def _readme_sections():
 
     first, last = min(GLYPH_MAP), max(GLYPH_MAP)
     return {
-        "upstream": f"[CaskaydiaCove Nerd Font](https://github.com/ryanoasis/nerd-fonts) **v{NERD_FONTS}** "
+        "upstream": f"[Nerd Fonts](https://github.com/ryanoasis/nerd-fonts) **v{NERD_FONTS}** ({names}) "
                     "extended with AI tool icons that Nerd Fonts does not ship yet, taken from "
                     f"[devicons](https://github.com/vorillaz/devicons) **v{DEVICONS}**.",
+        "fonts": "\n".join(fonts),
         "glyphs": "\n".join(glyphs),
         "check": f"```powershell\n0x{first:04X}..0x{last:04X} | ForEach-Object {{ \"$([char]$_)  U+{{0:X4}}\" -f $_ }}\n```",
         "variants": "\n".join(variants),
         "symbols": symbols,
-        "sources": f"```text\nCaskaydiaCove Nerd Font v{NERD_FONTS}  {nf_url}\n"
-                   f"devicons v{DEVICONS}                {dev_url}\n```",
+        "sources": "```text\n" + "\n".join(sources) + "\n```",
     }
 
 
@@ -194,6 +223,7 @@ def main():
     ap = argparse.ArgumentParser(description="Valida icons.toml y genera el README.")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("check", help="valida icons.toml")
+    sub.add_parser("fonts", help="una línea por [[font]]: archive family (para los scripts de CI)")
     readme = sub.add_parser("readme", help="regenera las secciones generadas del README")
     readme.add_argument("--check", action="store_true", help="falla si el README no está al día")
     bump = sub.add_parser("bump", help="cambia las versiones de upstream")
@@ -207,6 +237,10 @@ def main():
         print(f"OK: v{VERSION} | {len(GLYPH_MAP)} iconos, {len(COLOR_ICONS)} a color, {len(COLOR_VARIANTS)} variantes "
               f"| Nerd Fonts {NERD_FONTS}, devicons {DEVICONS}")
         print(f"Siguiente codepoint libre para [[icon]]: U+{free:04X}" if free else "Rango lleno")
+        print("Fuentes: " + ", ".join(f"{f['family']} ({f['license']})" for f in FONTS))
+    elif args.cmd == "fonts":
+        for f in FONTS:
+            print(f["archive"], f["family"])
     elif args.cmd == "readme":
         with open(README_PATH, encoding="utf-8") as f:
             old = f.read()
