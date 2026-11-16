@@ -94,6 +94,10 @@ def load(path=TOML_PATH):
             errors.append(f"font[{i}] {f.get('archive', '?')}: faltan {', '.join(missing)}")
         elif not re.fullmatch(r"[A-Za-z0-9]+", f["archive"]):
             errors.append(f"font[{i}]: archive {f['archive']!r} debe ser el nombre del .tar.xz sin extensión")
+        else:
+            subs = f.setdefault("subfamilies", [f["family"]])
+            if not subs or not all(isinstance(s, str) and s for s in subs):
+                errors.append(f"font[{i}] {f['archive']}: subfamilies debe ser una lista de nombres")
     for key in ("archive", "family"):
         repeated = {f.get(key) for f in fonts if [g.get(key) for g in fonts].count(f.get(key)) > 1}
         if repeated:
@@ -153,10 +157,11 @@ def _readme_sections():
     sources = [f"{f'{fam} v{NERD_FONTS}':<{width}}  {nf_url(f['archive'])}" for fam, f in zip(families, FONTS)]
     sources.append(f"{f'devicons v{DEVICONS}':<{width}}  {dev_url}")
 
-    fonts = ["| Nerd Font | Patched families | Font license | Zip |",
-             "|-----------|------------------|--------------|-----|"]
+    fonts = ["| Nerd Font | Installs as (each also in `Mono` and `Propo`) | Font license | Zip |",
+             "|-----------|------------------------------------------------|--------------|-----|"]
     for f in FONTS:
-        fonts.append(f"| [{f['family']} Nerd Font]({nf_url(f['archive'])}) | `{f['family']} … AI` "
+        installs = ", ".join(f"`{s} Nerd Font AI`" for s in f["subfamilies"])
+        fonts.append(f"| [{f['family']} Nerd Font]({nf_url(f['archive'])}) | {installs} "
                      f"| {f['license']} | `{f['family']}-NerdFont-AI-<version>.zip` |")
     names = ", ".join(f["family"] for f in FONTS)
 
