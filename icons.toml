@@ -5,8 +5,39 @@
 # del glifo en devicons (dist/devicons.ttf). CI construye y verifica las fuentes.
 
 [upstream]
-nerd_fonts = "3.5.1"   # release de ryanoasis/nerd-fonts (CascadiaCode.tar.xz)
+nerd_fonts = "3.5.1"   # release de ryanoasis/nerd-fonts (un .tar.xz por [[font]])
 devicons = "2.4.0"     # paquete npm devicons
+
+# [[font]]: familias de Nerd Fonts que se parchean. Cada una sale en su propio zip con
+# el archivo de licencia que trae el .tar.xz. AI Symbols toma sus métricas de
+# CaskaydiaCove, así que CascadiaCode debe seguir en la lista.
+#   archive  nombre del .tar.xz en la release de Nerd Fonts
+#   family   familia de Nerd Fonts (nombre del zip y del README)
+#   license  licencia de la fuente original
+[[font]]
+archive = "CascadiaCode"
+family = "CaskaydiaCove"
+license = "OFL-1.1"
+
+[[font]]
+archive = "JetBrainsMono"
+family = "JetBrainsMono"
+license = "OFL-1.1"
+
+[[font]]
+archive = "FiraCode"
+family = "FiraCode"
+license = "OFL-1.1"
+
+[[font]]
+archive = "Meslo"
+family = "MesloLG"
+license = "Apache-2.0"
+
+[[font]]
+archive = "Hack"
+family = "Hack"
+license = "MIT"
 
 # Hueco libre tras Pomicons (U+E000–E00A), que no ha cambiado en años. patch_all.py
 # se niega a parchear si la fuente de Nerd Fonts ya tiene algún glifo en el rango.

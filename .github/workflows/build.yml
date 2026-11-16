@@ -21,8 +21,8 @@ jobs:
 
       - uses: actions/upload-artifact@v7
         with:
-          name: CaskaydiaCove-NerdFont-AI
-          path: Patched/*.ttf
+          name: NerdFonts-AI
+          path: Patched/
           retention-days: 14
 
       - uses: actions/upload-artifact@v7
