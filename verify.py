@@ -6,6 +6,7 @@ Verifica las fuentes generadas por patch_all.py comparándolas con las originale
 - NF: avance = 1 celda; Propo: avance = ancho del icono
 - Iconos centrados verticalmente y dentro de la caja de referencia de Nerd Fonts
 - glyphOrder sin duplicados; glifos originales intactos; nombres con " AI"
+- La familia es "<subfamilia> Nerd Font[ Mono| Propo] AI" de una subfamilia de icons.toml
 - La fuente original tiene los iconos de Nerd Fonts de los [[variant]] de icons.toml
 
 Uso:
@@ -17,8 +18,12 @@ import sys
 
 from fontTools.ttLib import TTFont
 
-from icons import GLYPH_MAP, VARIANTS
+from icons import FONTS, GLYPH_MAP, VARIANTS
 from patch_all import FAMILY_SUFFIX, FILE_SUFFIX, GLYPH_PREFIX, variant
+
+# "<subfamilia> Nerd Font AI", "… Mono AI", "… Propo AI" (icons.toml [[font]] subfamilies)
+FAMILY_NAMES = {f"{s} Nerd Font{v}{FAMILY_SUFFIX}" for f in FONTS for s in f["subfamilies"]
+                for v in ("", " Mono", " Propo")}
 
 CENTER_TOLERANCE = 2  # unidades de redondeo
 
@@ -79,6 +84,11 @@ def check(src_path, out_path):
     changed = [n for n in src.getGlyphOrder() if hmtx[n] != src_hmtx[n]]
     if changed:
         errors.append(f"{len(changed)} glifos originales cambiaron métricas")
+
+    names = out["name"]
+    typographic = names.getDebugName(16) or names.getDebugName(1)
+    if typographic not in FAMILY_NAMES:
+        errors.append(f"familia {typographic!r} no corresponde a ninguna subfamilia de icons.toml")
 
     for record in out["name"].names:
         s = record.toUnicode()

@@ -12,8 +12,10 @@ devicons = "2.4.0"     # paquete npm devicons
 # el archivo de licencia que trae el .tar.xz. AI Symbols toma sus métricas de
 # CaskaydiaCove, así que CascadiaCode debe seguir en la lista.
 #   archive  nombre del .tar.xz en la release de Nerd Fonts
-#   family   familia de Nerd Fonts (nombre del zip y del README)
-#   license  licencia de la fuente original
+#   family       familia de Nerd Fonts (nombre del zip y del README)
+#   license      licencia de la fuente original
+#   subfamilies  si el .tar.xz trae varias familias (default: [family]); verify.py
+#                comprueba que cada fuente parcheada sea "<subfamilia> Nerd Font… AI"
 [[font]]
 archive = "CascadiaCode"
 family = "CaskaydiaCove"
@@ -23,6 +25,7 @@ license = "OFL-1.1"
 archive = "JetBrainsMono"
 family = "JetBrainsMono"
 license = "OFL-1.1"
+subfamilies = ["JetBrainsMono", "JetBrainsMonoNL"]
 
 [[font]]
 archive = "FiraCode"
@@ -33,6 +36,7 @@ license = "OFL-1.1"
 archive = "Meslo"
 family = "MesloLG"
 license = "Apache-2.0"
+subfamilies = ["MesloLGS", "MesloLGM", "MesloLGL", "MesloLGSDZ", "MesloLGMDZ", "MesloLGLDZ"]
 
 [[font]]
 archive = "Hack"

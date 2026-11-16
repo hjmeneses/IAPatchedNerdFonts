@@ -8,7 +8,7 @@
 
 Two ways to get them:
 
-- **[Patched fonts](#patched-fonts)** (`CaskaydiaCove NF AI`, `JetBrainsMono NFM AI`, `FiraCode Nerd Font AI`, `MesloLGS Nerd Font AI`, `Hack Nerd Font AI`…): the icons are added to the font, monochrome like every Nerd Fonts icon.
+- **[Patched fonts](#patched-fonts)** (`CaskaydiaCove Nerd Font AI`, `JetBrainsMono Nerd Font AI`, `FiraCode Nerd Font AI`, `MesloLGS Nerd Font AI`, `Hack Nerd Font AI`…): the icons are added to the font, monochrome like every Nerd Fonts icon.
 - **[AI Symbols](#ai-symbols-color-icons-as-a-fallback-font)**: a small icon-only fallback font that works with **any** font, patched or not. Brand logos come in color.
 
 ![Every icon in the patched font (monochrome) and in AI Symbols (color), plus the color variants next to the official Nerd Fonts icons](preview.png)
@@ -79,28 +79,32 @@ Nerd Fonts appends new icons to the end of each icon set's block (Devicons `U+E7
 
 <!-- generated:fonts -->
 
-| Nerd Font | Patched families | Font license | Zip |
-|-----------|------------------|--------------|-----|
-| [CaskaydiaCove Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/CascadiaCode.tar.xz) | `CaskaydiaCove … AI` | OFL-1.1 | `CaskaydiaCove-NerdFont-AI-<version>.zip` |
-| [JetBrainsMono Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.tar.xz) | `JetBrainsMono … AI` | OFL-1.1 | `JetBrainsMono-NerdFont-AI-<version>.zip` |
-| [FiraCode Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/FiraCode.tar.xz) | `FiraCode … AI` | OFL-1.1 | `FiraCode-NerdFont-AI-<version>.zip` |
-| [MesloLG Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/Meslo.tar.xz) | `MesloLG … AI` | Apache-2.0 | `MesloLG-NerdFont-AI-<version>.zip` |
-| [Hack Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/Hack.tar.xz) | `Hack … AI` | MIT | `Hack-NerdFont-AI-<version>.zip` |
+| Nerd Font | Installs as (each also in `Mono` and `Propo`) | Font license | Zip |
+|-----------|------------------------------------------------|--------------|-----|
+| [CaskaydiaCove Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/CascadiaCode.tar.xz) | `CaskaydiaCove Nerd Font AI` | OFL-1.1 | `CaskaydiaCove-NerdFont-AI-<version>.zip` |
+| [JetBrainsMono Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.tar.xz) | `JetBrainsMono Nerd Font AI`, `JetBrainsMonoNL Nerd Font AI` | OFL-1.1 | `JetBrainsMono-NerdFont-AI-<version>.zip` |
+| [FiraCode Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/FiraCode.tar.xz) | `FiraCode Nerd Font AI` | OFL-1.1 | `FiraCode-NerdFont-AI-<version>.zip` |
+| [MesloLG Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/Meslo.tar.xz) | `MesloLGS Nerd Font AI`, `MesloLGM Nerd Font AI`, `MesloLGL Nerd Font AI`, `MesloLGSDZ Nerd Font AI`, `MesloLGMDZ Nerd Font AI`, `MesloLGLDZ Nerd Font AI` | Apache-2.0 | `MesloLG-NerdFont-AI-<version>.zip` |
+| [Hack Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/Hack.tar.xz) | `Hack Nerd Font AI` | MIT | `Hack-NerdFont-AI-<version>.zip` |
 
 <!-- /generated:fonts -->
 
 Each family is its own zip and keeps the license of the original font, which is included in the zip.
 
+To patch another Nerd Fonts family, add a `[[font]]` to [`icons.toml`](icons.toml) with the name of its `.tar.xz` in the Nerd Fonts release (and `subfamilies` if the archive has more than one family, like Meslo), and run `python icons.py readme`. CI downloads, patches and verifies it.
+
 ## Installing
 
 Download the zip of your font from [Releases](../../releases), extract it, select the `.ttf` files, and choose **Install** (or **Install for all users**).
 
-The fonts install as a separate family with ` AI` after the Nerd Fonts name (`CaskaydiaCove NFM AI`, `JetBrainsMono NF AI`, `FiraCode Nerd Font Mono AI`, `MesloLGS Nerd Font AI`…), so they can live side by side with the upstream Nerd Font. When the legacy family name would exceed 31 characters, the weight is abbreviated the way Nerd Fonts does it (`FiraCode Nerd Font Mono AI Lt`, `JetBrainsMonoNL NFM AI ExtLt`), and if it still does not fit, `Nerd Font Mono` becomes `NFM` (`FiraCode NFM AI SemBd`). The typographic family and style names, which modern apps use, are not abbreviated.
+The fonts install as a separate family with ` AI` after the Nerd Fonts name (`CaskaydiaCove Nerd Font Mono AI`, `FiraCode Nerd Font AI`, `MesloLGS Nerd Font Propo AI`…), so they can live side by side with the upstream Nerd Font.
+
+Older apps that only read the legacy family name (limited to 31 characters) may show a shorter name. CaskaydiaCove and JetBrainsMono already use `NF`/`NFM`/`NFP` there upstream (`CaskaydiaCove NFM AI`). When the name with ` AI` would still exceed 31 characters, the weight is abbreviated the way Nerd Fonts does it (`FiraCode Nerd Font Mono AI Lt`, `JetBrainsMonoNL NFM AI ExtLt`), and if it still does not fit, `Nerd Font Mono` becomes `NFM` (`FiraCode NFM AI SemBd`).
 
 | Variant | Use it when |
 |---------|-------------|
 | **NFM** (Mono) | Your terminal requires strict monospacing. Icons fit in one cell. |
-| **NF** | Most terminals. Icons are larger and overflow to about 1.7 cells, like the official Nerd Fonts icons. |
+| **NF** | Most terminals. Icons are larger and overflow to about 1.6–1.7 cells (depending on the font), like the official Nerd Fonts icons. |
 | **NFP** (Propo) | Proportional contexts: GUI elements and presentations. |
 
 To check the glyphs in your terminal:
@@ -154,7 +158,7 @@ Two families, like the official *Symbols Nerd Font*:
 
 | Family | Use it with |
 |--------|-------------|
-| `AI Symbols` | NF fonts: icons are UPM-sized and overflow to about 1.7 cells |
+| `AI Symbols` | NF fonts: icons are UPM-sized and overflow to about 1.6–1.7 cells |
 | `AI Symbols Mono` | NFM fonts: icons fit in one cell |
 
 Windows Terminal (`settings.json`, per profile or in `profiles.defaults`):
@@ -197,7 +201,7 @@ Combine checks with `or`, e.g. for Antigravity: `{{ if or (glob \".agents\") (gl
 
 Repeat the segment with `\ue012` for Kiro, `\ue011` for Antigravity, or `\uec1e` (`nf-cod-copilot`) for GitHub Copilot. An empty template hides the segment.
 
-A complete theme is in [`examples/friday.omp.json`](examples/friday.omp.json). On the right it shows segments for Claude, Kiro, Antigravity, Grok, Copilot and Codex, and the active AWS profile with `\ue067`, the AWS logo with white lettering. `U+E067` is only in AI Symbols: with the patched `\u2026 AI` fonts, change it to `\ue7ad` (`nf-dev-aws`). To try it:
+A complete theme is in [`examples/friday.omp.json`](examples/friday.omp.json). On the right it shows segments for Claude, Kiro, Antigravity, Grok, Copilot and Codex, and the active AWS profile with `\ue067`, the AWS logo with white lettering. `U+E067` is only in AI Symbols: with the patched `… AI` fonts, change it to `\ue7ad` (`nf-dev-aws`). To try it:
 
 ```powershell
 oh-my-posh init pwsh --config examples/friday.omp.json | Invoke-Expression
@@ -223,7 +227,7 @@ style = "#ff9900"
 
 ## Adding an icon
 
-Icons and upstream versions live in [`icons.toml`](icons.toml), the only place to edit. The scripts and the tables in this README read it.
+Icons, the patched font families and the upstream versions live in [`icons.toml`](icons.toml), the only place to edit. The scripts, CI and the tables in this README read it.
 
 1. Find the glyph name in devicons (`dist/devicons.ttf`).
 2. Add an `[[icon]]` with the next free codepoint, which `python icons.py check` prints. Add `color = true` if the brand colors of the SVG should be used in AI Symbols.
@@ -241,17 +245,15 @@ brand_ref = "https://raw.githubusercontent.com/jupyter/design/<commit>/logos/...
 
 `verify_brand.py` checks that the recolored SVG uses exactly `brand_colors`, so the brand color is never changed and a half recolor (white text, grey moons) fails. If `brand_ref` is an `.svg` pinned to a commit, it also downloads it and compares the palettes. If the brand does not publish an SVG (AWS), `brand_ref` points to its brand guidelines.
 
-`icons.py` rejects repeated codepoints or glyph names, codepoints outside `U+E00B–E09F`, missing fields, and a `recolor` without `brand_colors` and `brand_ref`.
+`icons.py` rejects repeated codepoints or glyph names, codepoints outside `U+E00B–E09F`, missing fields, a `recolor` without `brand_colors` and `brand_ref`, and a `[[font]]` without `archive`, `family` or `license`, or with a repeated `archive` or `family`.
 
 ## CI
 
 | Workflow | When | What it does |
 |----------|------|--------------|
-| [`build.yml`](.github/workflows/build.yml) | Every push and pull request | Validates `icons.toml` and that the README is up to date, builds both font sets, runs `verify.py`, `verify_symbols.py`, `verify_brand.py` and OpenType Sanitizer, and attaches the fonts to the run |
+| [`build.yml`](.github/workflows/build.yml) | Every push and pull request | Validates `icons.toml` and that the README is up to date, builds every patched family and AI Symbols, runs `verify.py`, `verify_symbols.py`, `verify_brand.py` and OpenType Sanitizer, and attaches the fonts to the run (`NerdFonts-AI` and `AISymbols`) |
 | [`upstream.yml`](.github/workflows/upstream.yml) | Mondays, or by hand | If Nerd Fonts or devicons has a new version, updates `icons.toml`, builds, and opens a pull request. If the build fails, the pull request is a draft |
 | [`release.yml`](.github/workflows/release.yml) | Pushing a `v*` tag | Builds and creates a draft release with one zip per patched family plus AI Symbols |
-
-To patch another Nerd Fonts family, add a `[[font]]` to `icons.toml` with the name of its `.tar.xz` in the Nerd Fonts release, and run `python icons.py readme`.
 
 ## Building the fonts yourself
 
@@ -273,14 +275,16 @@ devicons v2.4.0                 https://registry.npmjs.org/devicons/-/devicons-2
 ```powershell
 pip install -r requirements.txt
 
-# Once per family, each in its own folder
+# Once per family: <folder-with-ttf> is the extracted .tar.xz, <Family> the family in icons.toml
 python patch_all.py <folder-with-ttf> --devicons <devicons\package\dist\devicons.ttf> -o Patched\<Family>
 python verify.py <folder-with-ttf> Patched\<Family>
 
+# AI Symbols and the preview use CaskaydiaCove (<cascadia-folder> is the extracted CascadiaCode.tar.xz)
 python build_symbols.py --devicons-pkg <devicons\package> --reference <cascadia-folder>\CaskaydiaCoveNerdFont-Regular.ttf -o Symbols
 python verify_symbols.py Symbols
+python verify_brand.py --devicons-pkg <devicons\package>
 
-python preview.py --nerd-font <folder-with-ttf>\CaskaydiaCoveNerdFont-Regular.ttf --patched Patched\CaskaydiaCoveNerdFont-Regular-AI.ttf --symbols Symbols\AISymbols-Regular.ttf
+python preview.py --nerd-font <cascadia-folder>\CaskaydiaCoveNerdFont-Regular.ttf --patched Patched\CaskaydiaCove\CaskaydiaCoveNerdFont-Regular-AI.ttf --symbols Symbols\AISymbols-Regular.ttf
 ```
 
 `preview.py` regenerates `preview.png`, the image at the top of this README, from `icons.toml` and the built fonts.
@@ -300,15 +304,15 @@ AI Symbols needs the whole devicons package (`dist/devicons.ttf` and `dist/sprit
 
 `build_symbols.py` builds both AI Symbols families with the same geometry as `patch_all.py` (shared `icon_transform`), reading the vertical metrics and cell width from the `--reference` font. `verify_symbols.py` checks codepoints, advances, the cell and vertical boxes, and that every COLR layer exists, stays inside its icon, and uses a valid palette index.
 
-`verify.py` compares each output font with its source and checks codepoints, advances, the cell box, vertical centering, a duplicate-free glyph order, unchanged original metrics, names, and that the Nerd Fonts icons of the color variants still exist. The release fonts also pass [OpenType Sanitizer](https://github.com/khaledhosny/ots-python) (`python -m ots`).
+`verify.py` compares each output font with its source and checks codepoints, advances, the cell box, vertical centering, a duplicate-free glyph order, unchanged original metrics, names (the family must be one of the `subfamilies` in `icons.toml` plus ` AI`), and that the Nerd Fonts icons of the color variants still exist. The release fonts also pass [OpenType Sanitizer](https://github.com/khaledhosny/ots-python) (`python -m ots`).
 
 ## Licenses
 
 - **Fonts**: each patched family keeps the license of its original font, and its zip includes that license file:
-  - CaskaydiaCove (Cascadia Code, © Microsoft, Reserved Font Name *Cascadia Code*), JetBrainsMono and FiraCode: SIL Open Font License 1.1 (see [`OFL.txt`](OFL.txt)). These modified versions must remain under the OFL.
+  - CaskaydiaCove (Cascadia Code, © Microsoft, Reserved Font Name *Cascadia Code*; see [`OFL.txt`](OFL.txt)), JetBrainsMono (© The JetBrains Mono Project Authors) and FiraCode (© The Fira Code Project Authors): SIL Open Font License 1.1. These modified versions must remain under the OFL.
   - MesloLG: Apache License 2.0.
   - Hack: MIT License, plus the Bitstream Vera license for the glyphs derived from Bitstream Vera.
   - The Nerd Fonts patches are under the license of each font.
 - **Icons**: from [devicons](https://github.com/vorillaz/devicons) (MIT). The logos are trademarks of their respective owners and are included only to identify those tools.
 - **AI Symbols**: built only from devicons glyphs and SVGs (MIT).
-- **Scripts** (`icons.py`, `patch_all.py`, `verify.py`, `build_symbols.py`, `verify_symbols.py`, `preview.py`): GNU GPL v3 — see [`LICENSE`](LICENSE).
+- **Scripts** (`icons.py`, `patch_all.py`, `verify.py`, `build_symbols.py`, `verify_symbols.py`, `verify_brand.py`, `preview.py`): GNU GPL v3 — see [`LICENSE`](LICENSE).
