@@ -10,9 +10,9 @@ todavía no incluye. Iconos y versiones de upstream: icons.toml.
 - Propo: caja de UPM x UPM; avance = ancho del icono
 - Centra verticalmente en (sTypoAscender + sTypoDescender) / 2
 - Inserta en todas las subtablas cmap Unicode (formato 4 y 12)
-- Agrega " AI" a la familia y "AI" al nombre PostScript; si el nameID 1 pasa de 31
-  caracteres abrevia el estilo como font-patcher ('ExtraLight' -> 'ExtLt') y, si aún
-  no cabe, la familia ('Nerd Font Mono' -> 'NFM')
+- Agrega " AI" a la familia y "AI" al nombre PostScript. Si el nameID 1 de algún peso
+  pasa de 31 caracteres, toda esa familia usa el nombre corto ('Nerd Font Mono' ->
+  'NFM') y, si aún no cabe, se abrevia el peso ('ExtraLight' -> 'ExtLt')
 - Se niega a parchear si la fuente ya tiene glifos en el rango de icons.toml
 
 Uso:
@@ -40,12 +40,14 @@ VERSION_NOTE = f"; AI icons (devicons {DEVICONS})"
 DROP_TABLES = ("hdmx", "LTSH", "VDMX")
 # Límite del nameID 1 en apps antiguas (GDI)
 MAX_FAMILY = 31
-# Abreviaturas de font-patcher (FontnameTools), las compuestas primero
-STYLE_ABBREVIATIONS = (
-    ("ExtraLight", "ExtLt"), ("ExtraBold", "ExtBd"), ("SemiLight", "SemLt"), ("SemiBold", "SemBd"),
-    ("UltraLight", "UltLt"), ("UltraBold", "UltBd"), ("DemiBold", "DemBd"),
-    ("Light", "Lt"), ("Medium", "Med"), ("Retina", "Ret"), ("Black", "Blk"), ("Heavy", "Hv"), ("Thin", "Th"),
-)
+# Abreviaturas tomadas de las tablas de font-patcher (bin/scripts/name_parser/
+# FontnameTools.py de Nerd Fonts): modificador + peso, como el 'SemBd' de FiraCode, y los
+# pesos sueltos que upstream ya abrevia ('Med', 'Ret'). No es el algoritmo de font-patcher.
+STYLE_MODIFIERS = {"Extra": "Ext", "Semi": "Sem", "Demi": "Dem", "Ultra": "Ult"}
+STYLE_WEIGHTS = {"Bold": "Bd", "Light": "Lt", "Black": "Blk", "Heavy": "Hv", "Thin": "Th"}
+STYLE_STANDALONE = {"Medium": "Med", "Retina": "Ret"}
+STYLE_COMPOUND = re.compile(rf"\b({'|'.join(STYLE_MODIFIERS)})({'|'.join(STYLE_WEIGHTS)})\b")
+SHORT_FAMILIES = ((" Nerd Font Mono", " NFM"), (" Nerd Font Propo", " NFP"), (" Nerd Font", " NF"))
 
 
 def variant(font):
@@ -103,40 +105,70 @@ def build_glyph(dev, src_name, font, kind):
 
 
 def short_style(style):
-    """Abrevia los pesos como font-patcher de Nerd Fonts: 'ExtraLight' -> 'ExtLt', 'SemiBold' -> 'SemBd'."""
-    for long, short in STYLE_ABBREVIATIONS:
+    """'ExtraLight' -> 'ExtLt', 'SemiBold' -> 'SemBd', 'Medium' -> 'Med'."""
+    style = STYLE_COMPOUND.sub(lambda m: STYLE_MODIFIERS[m.group(1)] + STYLE_WEIGHTS[m.group(2)], style)
+    for long, short in STYLE_STANDALONE.items():
         style = re.sub(rf"\b{long}\b", short, style)
     return style
 
 
 def short_family(family):
     """'FiraCode Nerd Font Mono' -> 'FiraCode NFM', como los nombres cortos de Nerd Fonts."""
-    for long, short in ((" Nerd Font Mono", " NFM"), (" Nerd Font Propo", " NFP"), (" Nerd Font", " NF")):
+    for long, short in SHORT_FAMILIES:
         if family.endswith(long):
             return family[: -len(long)] + short
     return family
 
 
-def rename(font):
-    """Inserta el sufijo tras la familia: 'CaskaydiaCove NFM SemiLight' -> 'CaskaydiaCove NFM AI SemiLight'.
-    Si el nameID 1 pasa de 31 caracteres abrevia el estilo ('FiraCode Nerd Font Mono AI Lt') y, si
-    aún no cabe, la familia ('FiraCode NFM AI SemBd')."""
-    names = font["name"]
-    bases = {r.toUnicode() for r in names.names if r.nameID == 16}
-    if not bases:
-        bases = {names.getDebugName(1)}
-    bases = sorted(bases, key=len, reverse=True)
+def family_bases(names):
+    """Familias con las que empiezan los nombres, la más larga primero: la tipográfica
+    (nameID 16, 'CaskaydiaCove Nerd Font Mono') y, si la hay, la corta ('CaskaydiaCove NFM')."""
+    bases = {r.toUnicode() for r in names.names if r.nameID == 16} or {names.getDebugName(1)}
+    return sorted(bases, key=len, reverse=True)
 
+
+def overflows(font):
+    """(familia tipográfica, True si algún nameID 1 con el sufijo pasa de MAX_FAMILY)."""
+    names = font["name"]
+    bases = family_bases(names)
+    over = False
     for record in names.names:
+        if record.nameID == 1:
+            s = record.toUnicode()
+            base = next((b for b in bases if s.startswith(b)), s)
+            over |= len(base + FAMILY_SUFFIX + s[len(base):]) > MAX_FAMILY
+    return bases[0], over
+
+
+def rename(font, short_families=()):
+    """Inserta el sufijo tras la familia: 'CaskaydiaCove NFM SemiLight' -> 'CaskaydiaCove NFM AI SemiLight'.
+
+    El nameID 1 no puede pasar de 31 caracteres. Si algún peso de una familia tipográfica no
+    cabe (está en `short_families`), todos sus pesos usan la familia corta, como hace Nerd
+    Fonts con CaskaydiaCove: 'FiraCode NFM AI', 'FiraCode NFM AI Light'. Así la familia no
+    queda con nombres largos y cortos mezclados. Si aun así no cabe, se abrevia el peso:
+    'JetBrainsMonoNL NFM AI ExtLt'."""
+    names = font["name"]
+    bases = family_bases(names)
+    shorten = bases[0] in short_families
+    had_typographic = any(r.nameID == 16 for r in names.names)
+
+    for record in list(names.names):
         s = record.toUnicode()
         if record.nameID in (1, 3, 4, 16):
             for base in bases:
                 if s.startswith(base) and not s.startswith(base + FAMILY_SUFFIX):
                     new = base + FAMILY_SUFFIX + s[len(base):]
-                    if record.nameID == 1 and len(new) > MAX_FAMILY:
-                        new = base + FAMILY_SUFFIX + short_style(s[len(base):])
-                    if record.nameID == 1 and len(new) > MAX_FAMILY:
-                        new = short_family(base) + FAMILY_SUFFIX + short_style(s[len(base):])
+                    if record.nameID == 1:
+                        if shorten:
+                            new = short_family(base) + FAMILY_SUFFIX + s[len(base):]
+                            if not had_typographic:
+                                # Sin nameID 16 la familia tipográfica es el nameID 1: se conserva
+                                # completa para que no se separe del resto de pesos
+                                names.setName(base + FAMILY_SUFFIX, 16, record.platformID,
+                                              record.platEncID, record.langID)
+                        if len(new) > MAX_FAMILY:
+                            new = short_family(base) + FAMILY_SUFFIX + short_style(s[len(base):])
                         if len(new) > MAX_FAMILY:
                             raise ValueError(f"nameID 1 de {len(new)} caracteres (> {MAX_FAMILY}): {new!r}")
                     record.string = new
@@ -150,7 +182,19 @@ def rename(font):
                 record.string = family + PS_SUFFIX + sep + style
 
 
-def patch_font(path, dev, out_dir):
+def families_to_shorten(paths):
+    """Familias tipográficas de `paths` en las que algún peso no cabe en el nameID 1."""
+    short = set()
+    for path in paths:
+        font = TTFont(path, lazy=True)
+        family, over = overflows(font)
+        font.close()
+        if over:
+            short.add(family)
+    return short
+
+
+def patch_font(path, dev, out_dir, short_families=()):
     font = TTFont(path)
     cmap = font.getBestCmap()
     taken = [f"U+{cp:04X}" for cp in range(RANGE[0], RANGE[1] + 1) if cp in cmap]
@@ -181,7 +225,7 @@ def patch_font(path, dev, out_dir):
         if tag in font:
             del font[tag]
 
-    rename(font)
+    rename(font, short_families)
 
     stem, ext = os.path.splitext(os.path.basename(path))
     out_path = os.path.join(out_dir, f"{stem}{FILE_SUFFIX}{ext}")
@@ -208,12 +252,15 @@ def main():
 
     os.makedirs(args.out, exist_ok=True)
     print(f"Fuentes: {len(fonts)}  |  Salida: {os.path.abspath(args.out)}\n")
+    short_families = families_to_shorten(fonts)
+    if short_families:
+        print(f"Familia corta en el nameID 1: {', '.join(sorted(short_families))}\n")
 
     failed = 0
     for path in fonts:
         print(f"  {os.path.basename(path)} ... ", end="", flush=True)
         try:
-            kind, _ = patch_font(path, dev, args.out)
+            kind, _ = patch_font(path, dev, args.out, short_families)
             print(f"OK ({kind})")
         except Exception as e:  # sigue con las demás y reporta al final
             failed += 1

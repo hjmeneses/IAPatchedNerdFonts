@@ -7,6 +7,7 @@ Verifica las fuentes generadas por patch_all.py comparándolas con las originale
 - Iconos centrados verticalmente y dentro de la caja de referencia de Nerd Fonts
 - glyphOrder sin duplicados; glifos originales intactos; nombres con " AI"
 - La familia es "<subfamilia> Nerd Font[ Mono| Propo] AI" de una subfamilia de icons.toml
+- Todos los pesos de una familia usan la misma familia en el nameID 1 (larga o corta)
 - La fuente original tiene los iconos de Nerd Fonts de los [[variant]] de icons.toml
 
 Uso:
@@ -86,20 +87,27 @@ def check(src_path, out_path):
         errors.append(f"{len(changed)} glifos originales cambiaron métricas")
 
     names = out["name"]
-    typographic = names.getDebugName(16) or names.getDebugName(1)
+    families = {r.toUnicode() for r in names.names if r.nameID == 16} or {names.getDebugName(1)}
+    typographic = max(families, key=len)
     if typographic not in FAMILY_NAMES:
-        errors.append(f"familia {typographic!r} no corresponde a ninguna subfamilia de icons.toml")
+        sub = typographic.split(" Nerd Font")[0]
+        errors.append(f"familia {typographic!r} no está en icons.toml: agrega \"{sub}\" a `subfamilies` "
+                      "de su [[font]] (¿Nerd Fonts añadió una subfamilia al .tar.xz?) y corre "
+                      "`python icons.py readme`")
 
+    legacy = set()
     for record in out["name"].names:
         s = record.toUnicode()
         if record.nameID in (1, 16) and FAMILY_SUFFIX not in s:
             errors.append(f"nameID {record.nameID} sin sufijo: {s!r}")
         if record.nameID == 1 and len(s) > 31:
             errors.append(f"nameID 1 de {len(s)} caracteres (> 31): {s!r}")
+        if record.nameID == 1:
+            legacy.add(s.split(FAMILY_SUFFIX)[0])
 
     src.close()
     out.close()
-    return kind, errors
+    return kind, errors, typographic, legacy
 
 
 def main():
@@ -112,20 +120,27 @@ def main():
         pairs.append((src_path, os.path.join(out_dir, f"{stem}{FILE_SUFFIX}{ext}")))
 
     failed = 0
+    legacy_by_family = {}
     for src_path, out_path in pairs:
         label = os.path.basename(out_path)
         if not os.path.exists(out_path):
             failed += 1
             print(f"  FALTA  {label}")
             continue
-        kind, errors = check(src_path, out_path)
+        kind, errors, typographic, legacy = check(src_path, out_path)
+        legacy_by_family.setdefault(typographic, set()).update(legacy)
         print(f"  {'OK   ' if not errors else 'FALLA'}  {label} ({kind})")
         for e in errors:
             print(f"         - {e}")
         failed += bool(errors)
 
+    # Todos los pesos de una familia usan la misma familia en el nameID 1 (larga o corta)
+    mixed = {fam: sorted(names) for fam, names in legacy_by_family.items() if len(names) > 1}
+    for fam, names in sorted(mixed.items()):
+        print(f"  FALLA  {fam}: nameID 1 mezcla {', '.join(repr(n) for n in names)}")
+
     print(f"\n{len(pairs) - failed}/{len(pairs)} fuentes verificadas")
-    sys.exit(1 if failed else 0)
+    sys.exit(1 if failed or mixed else 0)
 
 
 if __name__ == "__main__":

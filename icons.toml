@@ -41,7 +41,7 @@ subfamilies = ["MesloLGS", "MesloLGM", "MesloLGL", "MesloLGSDZ", "MesloLGMDZ", "
 [[font]]
 archive = "Hack"
 family = "Hack"
-license = "MIT"
+license = "MIT + Bitstream Vera"
 
 # Hueco libre tras Pomicons (U+E000–E00A), que no ha cambiado en años. patch_all.py
 # se niega a parchear si la fuente de Nerd Fonts ya tiene algún glifo en el rango.
