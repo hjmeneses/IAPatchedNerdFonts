@@ -56,17 +56,27 @@ runs:
           echo "$family: $(ls upstream/nf/$archive/*.ttf | wc -l) ttf"
         done
 
-    # Una carpeta por familia: Patched/<family>/, con el archivo de licencia de la fuente
+    # Una carpeta por familia: Patched/<family>/, con el archivo de licencia de la fuente.
+    # Las familias se construyen en paralelo; el log de cada una se muestra al final.
     - name: Fuentes parcheadas
       shell: bash
       run: |
-        python icons.py fonts | while read -r archive family; do
-          echo "::group::$family"
-          python patch_all.py "upstream/nf/$archive" --devicons upstream/devicons/package/dist/devicons.ttf -o "Patched/$family"
-          python verify.py "upstream/nf/$archive" "Patched/$family"
-          find "upstream/nf/$archive" -maxdepth 1 -type f ! -name '*.ttf' ! -name 'README.md' -exec cp {} "Patched/$family/" \;
-          echo "::endgroup::"
+        build_family() {
+          archive=$1 family=$2
+          {
+            python patch_all.py "upstream/nf/$archive" --devicons upstream/devicons/package/dist/devicons.ttf -o "Patched/$family" &&
+            python verify.py "upstream/nf/$archive" "Patched/$family" &&
+            find "upstream/nf/$archive" -maxdepth 1 -type f ! -name '*.ttf' ! -name 'README.md' -exec cp {} "Patched/$family/" \;
+          } > "build-$family.log" 2>&1
+        }
+        export -f build_family
+        status=0
+        python icons.py fonts | xargs -P "$(nproc)" -L 1 bash -c 'build_family "$0" "$1"' || status=$?
+        for log in build-*.log; do
+          echo "::group::${log%.log}"; cat "$log"; echo "::endgroup::"
         done
+        rm -f build-*.log
+        exit "$status"
 
     - name: AI Symbols
       shell: bash
@@ -79,7 +89,6 @@ runs:
     - name: OpenType Sanitizer
       shell: bash
       run: |
-        for f in Patched/*/*.ttf Symbols/*.ttf; do
-          python -m ots "$f" > /dev/null || { echo "OTS rechaza $f"; exit 1; }
-        done
+        ls Patched/*/*.ttf Symbols/*.ttf | xargs -P "$(nproc)" -I{} sh -c \
+          'python -m ots "{}" > /dev/null 2>&1 || { echo "OTS rechaza {}"; exit 1; }'
         echo "OTS: $(ls Patched/*/*.ttf Symbols/*.ttf | wc -l) fuentes OK"

@@ -85,7 +85,7 @@ Nerd Fonts appends new icons to the end of each icon set's block (Devicons `U+E7
 | [JetBrainsMono Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/JetBrainsMono.tar.xz) | `JetBrainsMono Nerd Font AI`, `JetBrainsMonoNL Nerd Font AI` | OFL-1.1 | `JetBrainsMono-NerdFont-AI-<version>.zip` |
 | [FiraCode Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/FiraCode.tar.xz) | `FiraCode Nerd Font AI` | OFL-1.1 | `FiraCode-NerdFont-AI-<version>.zip` |
 | [MesloLG Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/Meslo.tar.xz) | `MesloLGS Nerd Font AI`, `MesloLGM Nerd Font AI`, `MesloLGL Nerd Font AI`, `MesloLGSDZ Nerd Font AI`, `MesloLGMDZ Nerd Font AI`, `MesloLGLDZ Nerd Font AI` | Apache-2.0 | `MesloLG-NerdFont-AI-<version>.zip` |
-| [Hack Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/Hack.tar.xz) | `Hack Nerd Font AI` | MIT | `Hack-NerdFont-AI-<version>.zip` |
+| [Hack Nerd Font](https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/Hack.tar.xz) | `Hack Nerd Font AI` | MIT + Bitstream Vera | `Hack-NerdFont-AI-<version>.zip` |
 
 <!-- /generated:fonts -->
 
@@ -99,7 +99,7 @@ Download the zip of your font from [Releases](../../releases), extract it, selec
 
 The fonts install as a separate family with ` AI` after the Nerd Fonts name (`CaskaydiaCove Nerd Font Mono AI`, `FiraCode Nerd Font AI`, `MesloLGS Nerd Font Propo AI`…), so they can live side by side with the upstream Nerd Font.
 
-Older apps that only read the legacy family name (limited to 31 characters) may show a shorter name. CaskaydiaCove and JetBrainsMono already use `NF`/`NFM`/`NFP` there upstream (`CaskaydiaCove NFM AI`). When the name with ` AI` would still exceed 31 characters, the weight is abbreviated the way Nerd Fonts does it (`FiraCode Nerd Font Mono AI Lt`, `JetBrainsMonoNL NFM AI ExtLt`), and if it still does not fit, `Nerd Font Mono` becomes `NFM` (`FiraCode NFM AI SemBd`).
+Older apps that only read the legacy family name (limited to 31 characters) may show a shorter name. CaskaydiaCove and JetBrainsMono already use `NF`/`NFM`/`NFP` there upstream (`CaskaydiaCove NFM AI`). If any weight of a family would not fit with ` AI`, every weight of that family uses the short form, so the family is not split between long and short names (`FiraCode NFM AI`, `FiraCode NFM AI Light`). If a weight still does not fit, the weight is abbreviated (`JetBrainsMonoNL NFM AI ExtLt`).
 
 | Variant | Use it when |
 |---------|-------------|
@@ -299,20 +299,21 @@ AI Symbols needs the whole devicons package (`dist/devicons.ttf` and `dist/sprit
 - **Propo**: UPM-sized icon, with an advance equal to the icon width.
 - Centers icons vertically on `(sTypoAscender + sTypoDescender) / 2`.
 - Adds the glyphs to every Unicode `cmap` subtable (formats 4 and 12).
-- Renames the family to `… AI` (e.g. `CaskaydiaCove NFM AI SemiBold`) and the PostScript name to `…AI-Style`, and appends a note to the version string. If the legacy family name (nameID 1) would exceed the 31-character limit older apps use, it abbreviates the weight with Nerd Fonts' `font-patcher` abbreviations (`ExtLt`, `SemBd`, `Lt`…) and, if needed, the family (`Nerd Font Mono` → `NFM`).
+- Renames the family to `… AI` (e.g. `CaskaydiaCove NFM AI SemiBold`) and the PostScript name to `…AI-Style`, and appends a note to the version string. If the legacy family name (nameID 1) of any weight would exceed the 31-character limit older apps use, the whole family uses Nerd Fonts' short form there (`Nerd Font Mono` → `NFM`), keeping the full name as the typographic family (nameID 16). If a weight still does not fit, it is abbreviated with entries from the tables of Nerd Fonts' `font-patcher` (`ExtraLight` → `ExtLt`); this is not `font-patcher`'s own algorithm, so the result can differ from what it would produce.
 - Refuses to patch a font that already has glyphs in `U+E00B–E09F`, for example a font that was already patched, or a future Nerd Fonts release that started using the range.
 
 `build_symbols.py` builds both AI Symbols families with the same geometry as `patch_all.py` (shared `icon_transform`), reading the vertical metrics and cell width from the `--reference` font. `verify_symbols.py` checks codepoints, advances, the cell and vertical boxes, and that every COLR layer exists, stays inside its icon, and uses a valid palette index.
 
-`verify.py` compares each output font with its source and checks codepoints, advances, the cell box, vertical centering, a duplicate-free glyph order, unchanged original metrics, names (the family must be one of the `subfamilies` in `icons.toml` plus ` AI`), and that the Nerd Fonts icons of the color variants still exist. The release fonts also pass [OpenType Sanitizer](https://github.com/khaledhosny/ots-python) (`python -m ots`).
+`verify.py` compares each output font with its source and checks codepoints, advances, the cell box, vertical centering, a duplicate-free glyph order, unchanged original metrics, names (the family must be one of the `subfamilies` in `icons.toml` plus ` AI`, and all the weights of a family must use the same legacy family), and that the Nerd Fonts icons of the color variants still exist. The release fonts also pass [OpenType Sanitizer](https://github.com/khaledhosny/ots-python) (`python -m ots`).
 
 ## Licenses
 
 - **Fonts**: each patched family keeps the license of its original font, and its zip includes that license file:
   - CaskaydiaCove (Cascadia Code, © Microsoft, Reserved Font Name *Cascadia Code*; see [`OFL.txt`](OFL.txt)), JetBrainsMono (© The JetBrains Mono Project Authors) and FiraCode (© The Fira Code Project Authors): SIL Open Font License 1.1. These modified versions must remain under the OFL.
   - MesloLG: Apache License 2.0.
-  - Hack: MIT License, plus the Bitstream Vera license for the glyphs derived from Bitstream Vera.
-  - The Nerd Fonts patches are under the license of each font.
+  - Hack: MIT License (© Source Foundry Authors), plus the Bitstream Vera License for the Bitstream Vera Sans Mono glyphs it derives from (Reserved Font Names *Bitstream* and *Vera*).
+  - The icons that Nerd Fonts adds to every font come from several projects under their own licenses: see the Nerd Fonts [LICENSE](https://github.com/ryanoasis/nerd-fonts/blob/master/LICENSE) and its [license audit](https://github.com/ryanoasis/nerd-fonts/blob/-/license-audit.md).
+  - This is a summary, not legal advice: the license file in each zip is what applies.
 - **Icons**: from [devicons](https://github.com/vorillaz/devicons) (MIT). The logos are trademarks of their respective owners and are included only to identify those tools.
 - **AI Symbols**: built only from devicons glyphs and SVGs (MIT).
 - **Scripts** (`icons.py`, `patch_all.py`, `verify.py`, `build_symbols.py`, `verify_symbols.py`, `verify_brand.py`, `preview.py`): GNU GPL v3 — see [`LICENSE`](LICENSE).

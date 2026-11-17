@@ -60,7 +60,7 @@ jobs:
         with:
           name: fonts-nf${{ steps.check.outputs.nf }}-devicons${{ steps.check.outputs.dev }}
           path: |
-            Patched/*.ttf
+            Patched/
             Symbols/*.ttf
           retention-days: 30
 
@@ -87,7 +87,7 @@ jobs:
             result="✅ The fonts build and pass \`verify.py\`, \`verify_symbols.py\` and OTS. They are attached to the [workflow run]($RUN_URL)."
             draft=""
           else
-            result="❌ The build or the checks failed: see the [workflow run]($RUN_URL). Usual causes: devicons renamed or removed an icon, Nerd Fonts now uses \`U+E00B–E09F\`, or a color variant's Nerd Fonts icon moved."
+            result="❌ The build or the checks failed: see the [workflow run]($RUN_URL). Usual causes: devicons renamed or removed an icon, Nerd Fonts now uses \`U+E00B–E09F\`, a color variant's Nerd Fonts icon moved, or Nerd Fonts added a subfamily to an archive (add it to \`subfamilies\` in \`icons.toml\`; \`verify.py\` prints which one)."
             draft="--draft"
           fi
           gh pr create $draft --base main --head "$BRANCH" \
