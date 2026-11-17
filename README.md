@@ -75,6 +75,17 @@ Since v3.5.1, Nerd Fonts includes these through Codicons, so this patch does not
 
 Nerd Fonts appends new icons to the end of each icon set's block (Devicons `U+E700…`, Codicons `U+EA60…`), and those blocks grow with every release. `U+E00B–E09F` is the unused gap after Pomicons (`U+E000–E00A`), which has not changed in years, so it is the least likely place to collide with a future Nerd Fonts release. If Nerd Fonts adds any of these icons officially, they will be removed from this patch in favor of the official codepoint.
 
+### Which devicons?
+
+Two different projects are called devicons, and this repo and Nerd Fonts use different ones:
+
+| Project | Used by | For |
+|---------|---------|-----|
+| [vorillaz/devicons](https://github.com/vorillaz/devicons) (npm `devicons`) | This repo | Every icon in `U+E00B–E09F` and in AI Symbols |
+| [devicons/devicon](https://github.com/devicons/devicon) | Nerd Fonts | The `nf-dev-*` icons (Devicons block, `U+E700…`) |
+
+vorillaz/devicons is used because it has the AI logos; devicon has only a few of them, and only in releases newer than the one Nerd Fonts ships. When Nerd Fonts updates devicon, some of these tools (Claude Code, Cursor, Ollama, Hugging Face…) may appear twice, as an `nf-dev-*` icon and as the icon here, drawn differently. Until this patch drops the duplicate or turns it into a color variant, both codepoints work. The weekly [upstream check](#ci) follows Nerd Fonts releases, not devicon.
+
 ## Patched fonts
 
 <!-- generated:fonts -->
